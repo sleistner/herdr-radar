@@ -448,6 +448,65 @@ if (unstable) {
   problems.push(`workspace order: desiredOrder is not idempotent — ${unstable}`);
 }
 
+// The tree the Agents panel draws. An `owner` token outranks the repo, two
+// workspaces on the same main checkout stay side by side, the tree stays one
+// level deep, and a loop of owners never leaves a cycle for the sort to chase.
+{
+  const { worktreeParents } = require('../lib/state');
+  const repo = (linked) => ({ repo_key: '/r/.git', repo_name: 'r', is_linked_worktree: linked });
+  const list = [
+    { workspace_id: 'arch1', worktree: repo(false), tokens: {} },
+    { workspace_id: 'arch2', worktree: repo(false), tokens: {} },
+    { workspace_id: 'worker', worktree: repo(true), tokens: { owner: 'arch2' } },
+    { workspace_id: 'plain', worktree: repo(true), tokens: {} },
+    { workspace_id: 'sub', tokens: { owner: 'worker' } },
+    { workspace_id: 'ghost', worktree: repo(true), tokens: { owner: 'closed' } },
+    { workspace_id: 'loopA', tokens: { owner: 'loopB' } },
+    { workspace_id: 'loopB', tokens: { owner: 'loopA' } },
+  ];
+  const { parents, worktrees } = worktreeParents(list);
+  const expect = {
+    arch1: undefined,
+    arch2: undefined,
+    worker: 'arch2',
+    plain: 'arch1',
+    sub: 'arch2',
+    ghost: 'arch1',
+  };
+  for (const [child, parent] of Object.entries(expect)) {
+    if (parents.get(child) !== parent) {
+      problems.push(`worktreeParents: ${child} hangs under ${parents.get(child)}, expected ${parent}`);
+    }
+  }
+  if (parents.get('loopA') === 'loopB' && parents.get('loopB') === 'loopA') {
+    problems.push('worktreeParents: an owner loop survived as a cycle');
+  }
+  if (worktrees.has('worker')) {
+    problems.push('worktreeParents: an owned worktree is still listed as an orphan of its repo');
+  }
+}
+
+// Colour slots: every top-level group gets its own while there are slots
+// left, members wear their parent's, and a group keeps its slot when another
+// group leaves.
+{
+  const { Frame } = require('../lib/frame');
+  const frame = new Frame('check');
+  const entries = (...ids) => ids.map((ws) => ({ workspace: ws, pane: `${ws}:p1` }));
+  const parentOf = new Map([['m', 'b']]);
+  const first = frame.groupColorSlots(entries('a', 'b', 'm', 'c'), parentOf);
+  if (new Set([first.get('a'), first.get('b'), first.get('c')]).size !== 3) {
+    problems.push(`groupColorSlots: top-level groups share a slot — ${JSON.stringify([...first])}`);
+  }
+  if (first.get('m') !== first.get('b')) {
+    problems.push('groupColorSlots: a member does not wear its parent group colour');
+  }
+  const second = frame.groupColorSlots(entries('b', 'm', 'c'), parentOf);
+  if (second.get('b') !== first.get('b') || second.get('c') !== first.get('c')) {
+    problems.push('groupColorSlots: a group changed colour when another group left');
+  }
+}
+
 // Liveness is asked of the endpoint, never of a pid file.
 //
 // `kill(pid, 0)` on the pid file only says that SOME process has the number,
