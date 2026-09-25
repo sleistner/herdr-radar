@@ -466,6 +466,38 @@ if (unstable) {
   }
 }
 
+// Gaps close a whole family, with or without headers: none between a
+// checkout and its worktrees, none between two worktrees, one after the last.
+{
+  const herdr = require('../lib/herdr');
+  const { writeGaps, writeGroups } = require('../lib/state');
+  const report = herdr.reportMetadataAsync;
+  const gapsFrom = async (write) => {
+    const sent = new Map();
+    herdr.reportMetadataAsync = async (pane, _source, tokens) => {
+      sent.set(pane, tokens.gap);
+      return true;
+    };
+    await write();
+    return [...sent].filter(([, gap]) => gap).map(([pane]) => pane);
+  };
+  const rows = ['a', 'm1', 'm2', 'b'].map((workspace) => ({ workspace, pane: `${workspace}:p1` }));
+  const parentOf = new Map([
+    ['m1', 'a'],
+    ['m2', 'a'],
+  ]);
+  const labels = new Map(rows.map((row) => [row.workspace, row.workspace]));
+  (async () => {
+    const flat = await gapsFrom(() => writeGaps('check', rows, parentOf));
+    if (flat.join() !== 'm2:p1') problems.push(`writeGaps: gaps under ${flat.join(', ') || 'nothing'}, expected m2:p1`);
+    const headed = await gapsFrom(() => writeGroups('check', rows, labels, new Set(), { parentOf }));
+    if (headed.join() !== 'm2:p1,b:p1') {
+      problems.push(`writeGroups: gaps under ${headed.join(', ') || 'nothing'}, expected m2:p1, b:p1`);
+    }
+    herdr.reportMetadataAsync = report;
+  })();
+}
+
 // Liveness is asked of the endpoint, never of a pid file.
 //
 // `kill(pid, 0)` on the pid file only says that SOME process has the number,
@@ -485,8 +517,11 @@ for (const dir of ['lib', 'bin']) {
   }
 }
 
-if (problems.length) {
-  console.error(problems.join('\n'));
-  process.exit(1);
-}
-console.log('ok');
+// After the pending promise checks above have settled.
+setImmediate(() => {
+  if (problems.length) {
+    console.error(problems.join('\n'));
+    process.exit(1);
+  }
+  console.log('ok');
+});
