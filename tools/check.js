@@ -486,6 +486,33 @@ if (unstable) {
   }
 }
 
+// The flat list's gaps close a whole group, not each workspace in it: none
+// between an architect and its workers, one after the group's last row, none
+// after the last row of the list.
+{
+  const herdr = require('../lib/herdr');
+  const { writeGaps } = require('../lib/state');
+  const sent = new Map();
+  const report = herdr.reportMetadataAsync;
+  herdr.reportMetadataAsync = async (pane, _source, tokens) => {
+    sent.set(pane, tokens.gap);
+    return true;
+  };
+  const rows = [
+    ['a', 'a:p1'],
+    ['m', 'm:p1'],
+    ['m', 'm:p2'],
+    ['b', 'b:p1'],
+  ].map(([workspace, pane]) => ({ workspace, pane }));
+  writeGaps('check', rows, new Map([['m', 'a']])).then(() => {
+    herdr.reportMetadataAsync = report;
+    const gaps = [...sent].filter(([, gap]) => gap).map(([pane]) => pane);
+    if (gaps.join() !== 'm:p2') {
+      problems.push(`writeGaps: gaps under ${gaps.join(', ') || 'nothing'}, expected m:p2`);
+    }
+  });
+}
+
 // Colour slots: every top-level group gets its own while there are slots
 // left, members wear their parent's, and a group keeps its slot when another
 // group leaves.
@@ -526,8 +553,11 @@ for (const dir of ['lib', 'bin']) {
   }
 }
 
-if (problems.length) {
-  console.error(problems.join('\n'));
-  process.exit(1);
-}
-console.log('ok');
+// After the pending promise checks above have settled.
+setImmediate(() => {
+  if (problems.length) {
+    console.error(problems.join('\n'));
+    process.exit(1);
+  }
+  console.log('ok');
+});
