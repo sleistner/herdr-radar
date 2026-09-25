@@ -513,6 +513,31 @@ if (unstable) {
   });
 }
 
+// A pane tagged `role=architect` sorts first in its workspace and heads its
+// split, whatever the activity of the panes beside it.
+{
+  const { Frame } = require('../lib/frame');
+  const frame = new Frame('check');
+  frame.lastWorkingAt = new Map([
+    ['ws:busy', 60000 * 5],
+    ['ws:arch', 60000],
+    ['ws:split', 60000 * 2],
+  ]);
+  const rows = [
+    { workspace: 'ws', tab: 't1', pane: 'ws:busy', role: '' },
+    { workspace: 'ws', tab: 't2', pane: 'ws:split', role: '' },
+    { workspace: 'ws', tab: 't2', pane: 'ws:arch', role: 'architect' },
+  ];
+  const keys = frame.sortKeys(rows, new Map(), new Map());
+  const order = frame.displayOrder(rows, 'grouped', keys).map((row) => row.pane);
+  if (order[0] !== 'ws:arch') {
+    problems.push(`architect role: order is ${order.join(', ')}, expected ws:arch first`);
+  }
+  if (keys.splitChild(rows[2]) || !keys.splitChild(rows[1])) {
+    problems.push('architect role: the architect does not head its split');
+  }
+}
+
 // Colour slots: every top-level group gets its own while there are slots
 // left, members wear their parent's, and a group keeps its slot when another
 // group leaves.
