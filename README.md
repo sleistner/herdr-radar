@@ -238,7 +238,7 @@ the config file and restarts the daemon.
 | `leader_role` | `architect` | a pane whose `role` token has this value sorts first in its group; empty for none |
 | `group_gap` | `true` | a blank row between groups |
 | `reorder_workspaces` | `false` | make Herdr's workspace indices follow Radar's activity order |
-| `show_tab` | `false` | tab number in front of the title |
+| `row_label` | `title` | what names an agent row: `title`, `tab` (the tab's name) or `both`; replaces `show_tab` |
 | `trim_group_prefix` | `true` | drop the workspace name from a title when the header above already shows it |
 | `worktree_mark` | `U+F418` | the mark on a worktree header, needs a Nerd Font; empty for none |
 | `follow_appearance` | `true` | switch Herdr's theme with the desktop's light/dark |
