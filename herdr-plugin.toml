@@ -72,12 +72,6 @@ description = "Cycle the Agents panel: grouped by activity, flat by activity, or
 command = ["node", "bin/agent-view.js"]
 
 [[actions]]
-id = "group-fold"
-title = "Groups: fold <-> unfold the focused group"
-description = "Hide or show the workspaces hanging under the focused workspace's group in the Agents panel. Rows that need attention stay visible."
-command = ["node", "bin/group-fold.js"]
-
-[[actions]]
 id = "view-flip"
 title = "Agents: active <-> recent"
 description = "Flip between grouped-by-activity and flat-by-activity without leaving the plugin's order."
