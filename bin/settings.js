@@ -130,6 +130,12 @@ const FIELDS = [
   },
   { key: 'group_headers', kind: 'bool', fallback: true, help: 'A header row naming each workspace.' },
   { key: 'group_colors', kind: 'bool', fallback: true, help: 'A colour and a left stripe per group.' },
+  {
+    key: 'leader_role',
+    kind: 'text',
+    fallback: 'architect',
+    help: 'A pane whose `role` token has this value sorts first in its group. Empty for none.',
+  },
   { key: 'group_gap', kind: 'bool', fallback: true, help: 'A blank row between workspace groups.' },
   { key: 'show_tab', kind: 'bool', fallback: false, help: 'Show the tab number on the state line.' },
   {
@@ -365,6 +371,9 @@ class Editor {
         return (this.status = `${WARN}not a colour (hex, rgb(...) or a name)${R}`);
       }
       return this.values.set(field, raw);
+    }
+    if (field.kind === 'text' && !/^[A-Za-z0-9_.:-]*$/.test(raw)) {
+      return (this.status = `${WARN}letters, digits, _ . : - only${R}`);
     }
     this.values.set(field, raw);
   }

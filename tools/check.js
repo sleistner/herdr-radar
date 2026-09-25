@@ -539,8 +539,9 @@ if (unstable) {
   });
 }
 
-// A pane tagged `role=architect` sorts first in its workspace and heads its
-// split, whatever the activity of the panes beside it.
+// A pane whose `role` is the configured leader role (`architect` by default)
+// sorts first in its workspace and heads its split, whatever the activity of
+// the panes beside it.
 {
   const { Frame } = require('../lib/frame');
   const frame = new Frame('check');

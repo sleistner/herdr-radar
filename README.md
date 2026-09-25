@@ -235,6 +235,7 @@ the config file and restarts the daemon.
 | `group_indent` | `2` | spaces per level of the tree; `0` for no indent |
 | `group_headers` | `true` | a header row naming each workspace |
 | `group_colors` | `true` | a colour and a left stripe per group; an `owner` workspace token picks the group |
+| `leader_role` | `architect` | a pane whose `role` token has this value sorts first in its group; empty for none |
 | `group_gap` | `true` | a blank row between groups |
 | `reorder_workspaces` | `false` | make Herdr's workspace indices follow Radar's activity order |
 | `show_tab` | `false` | tab number in front of the title |
