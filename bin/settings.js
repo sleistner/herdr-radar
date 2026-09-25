@@ -129,7 +129,13 @@ const FIELDS = [
     help: 'Spaces members sit in under a workspace header; 0 = flat list.',
   },
   { key: 'group_gap', kind: 'bool', fallback: true, help: 'A blank row between workspace groups.' },
-  { key: 'show_tab', kind: 'bool', fallback: false, help: 'Show the tab number on the state line.' },
+  {
+    key: 'row_label',
+    kind: 'enum',
+    options: ['title', 'tab', 'both'],
+    fallback: 'title',
+    help: "What names an agent row: the session's title, its tab's name, or both.",
+  },
   {
     key: 'trim_group_prefix',
     kind: 'bool',
