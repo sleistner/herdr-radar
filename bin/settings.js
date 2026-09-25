@@ -129,6 +129,7 @@ const FIELDS = [
     help: 'Spaces per level of the tree; 0 = no indent and no tree lines.',
   },
   { key: 'group_headers', kind: 'bool', fallback: true, help: 'A header row naming each workspace.' },
+  { key: 'group_colors', kind: 'bool', fallback: false, help: 'A colour and a left stripe per group.' },
   { key: 'group_gap', kind: 'bool', fallback: true, help: 'A blank row between workspace groups.' },
   { key: 'show_tab', kind: 'bool', fallback: false, help: 'Show the tab number on the state line.' },
   {

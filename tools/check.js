@@ -498,6 +498,27 @@ if (unstable) {
   })();
 }
 
+// Colour slots: every top-level group gets its own while there are slots
+// left, members wear their parent's, and a group keeps its slot when another
+// group leaves.
+{
+  const { Frame } = require('../lib/frame');
+  const frame = new Frame('check');
+  const entries = (...ids) => ids.map((ws) => ({ workspace: ws, pane: `${ws}:p1` }));
+  const parentOf = new Map([['m', 'b']]);
+  const first = frame.groupColorSlots(entries('a', 'b', 'm', 'c'), parentOf);
+  if (new Set([first.get('a'), first.get('b'), first.get('c')]).size !== 3) {
+    problems.push(`groupColorSlots: top-level groups share a slot — ${JSON.stringify([...first])}`);
+  }
+  if (first.get('m') !== first.get('b')) {
+    problems.push('groupColorSlots: a member does not wear its parent group colour');
+  }
+  const second = frame.groupColorSlots(entries('b', 'm', 'c'), parentOf);
+  if (second.get('b') !== first.get('b') || second.get('c') !== first.get('c')) {
+    problems.push('groupColorSlots: a group changed colour when another group left');
+  }
+}
+
 // Liveness is asked of the endpoint, never of a pid file.
 //
 // `kill(pid, 0)` on the pid file only says that SOME process has the number,

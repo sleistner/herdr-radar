@@ -234,6 +234,7 @@ the config file and restarts the daemon.
 | `activity_stale_minutes` | `120` | how long without a turn before the row dims |
 | `group_indent` | `2` | spaces per level of the tree; `0` for no indent and no tree lines |
 | `group_headers` | `true` | a header row naming each workspace |
+| `group_colors` | `false` | a colour and a left stripe per group, so each group reads as one block |
 | `group_gap` | `true` | a blank row between groups |
 | `reorder_workspaces` | `false` | make Herdr's workspace indices follow Radar's activity order |
 | `show_tab` | `false` | tab number in front of the title |
