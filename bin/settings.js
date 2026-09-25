@@ -126,8 +126,10 @@ const FIELDS = [
     min: 0,
     max: 8,
     fallback: 2,
-    help: 'Spaces members sit in under a workspace header; 0 = flat list.',
+    help: 'Spaces per level of the tree; 0 = no indent.',
   },
+  { key: 'group_headers', kind: 'bool', fallback: true, help: 'A header row naming each workspace.' },
+  { key: 'group_colors', kind: 'bool', fallback: true, help: 'A colour and a left stripe per group.' },
   { key: 'group_gap', kind: 'bool', fallback: true, help: 'A blank row between workspace groups.' },
   { key: 'show_tab', kind: 'bool', fallback: false, help: 'Show the tab number on the state line.' },
   {

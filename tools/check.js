@@ -513,6 +513,32 @@ if (unstable) {
   });
 }
 
+// With headers, the gap closes a family too: none between an architect and
+// its first worker, none between two workers, one after the last.
+{
+  const herdr = require('../lib/herdr');
+  const { writeGroups } = require('../lib/state');
+  const sent = new Map();
+  const report = herdr.reportMetadataAsync;
+  herdr.reportMetadataAsync = async (pane, _source, tokens) => {
+    sent.set(pane, tokens.gap);
+    return true;
+  };
+  const rows = ['a', 'm1', 'm2', 'b'].map((workspace) => ({ workspace, pane: `${workspace}:p1` }));
+  const labels = new Map(rows.map((row) => [row.workspace, row.workspace]));
+  const parentOf = new Map([
+    ['m1', 'a'],
+    ['m2', 'a'],
+  ]);
+  writeGroups('check', rows, labels, new Set(), { parentOf }).then(() => {
+    herdr.reportMetadataAsync = report;
+    const gaps = [...sent].filter(([, gap]) => gap).map(([pane]) => pane);
+    if (gaps.join() !== 'm2:p1,b:p1') {
+      problems.push(`writeGroups: gaps under ${gaps.join(', ') || 'nothing'}, expected m2:p1, b:p1`);
+    }
+  });
+}
+
 // A pane tagged `role=architect` sorts first in its workspace and heads its
 // split, whatever the activity of the panes beside it.
 {
