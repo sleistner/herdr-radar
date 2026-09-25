@@ -109,7 +109,7 @@ title = "herdr-radar settings"
 placement = "popup"
 command = ["node", "bin/settings.js"]
 width = 84
-height = 28
+height = 29
 
 [[actions]]
 id = "settings"

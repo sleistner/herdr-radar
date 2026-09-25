@@ -519,6 +519,70 @@ if (unstable) {
   }
 }
 
+// The tree the Agents panel draws. An `owner` token outranks the repo, two
+// workspaces on the same main checkout stay side by side, the tree stays one
+// level deep, and a loop of owners never leaves a cycle for the sort to chase.
+{
+  const { worktreeParents } = require('../lib/state');
+  const repo = (linked) => ({ repo_key: '/r/.git', repo_name: 'r', is_linked_worktree: linked });
+  const list = [
+    { workspace_id: 'arch1', worktree: repo(false), tokens: {} },
+    { workspace_id: 'arch2', worktree: repo(false), tokens: {} },
+    { workspace_id: 'worker', worktree: repo(true), tokens: { owner: 'arch2' } },
+    { workspace_id: 'plain', worktree: repo(true), tokens: {} },
+    { workspace_id: 'sub', tokens: { owner: 'worker' } },
+    { workspace_id: 'ghost', worktree: repo(true), tokens: { owner: 'closed' } },
+    { workspace_id: 'loopA', tokens: { owner: 'loopB' } },
+    { workspace_id: 'loopB', tokens: { owner: 'loopA' } },
+  ];
+  const { parents, worktrees } = worktreeParents(list);
+  const expect = {
+    arch1: undefined,
+    arch2: undefined,
+    worker: 'arch2',
+    plain: 'arch1',
+    sub: 'arch2',
+    ghost: 'arch1',
+  };
+  for (const [child, parent] of Object.entries(expect)) {
+    if (parents.get(child) !== parent) {
+      problems.push(`worktreeParents: ${child} hangs under ${parents.get(child)}, expected ${parent}`);
+    }
+  }
+  if (parents.get('loopA') === 'loopB' && parents.get('loopB') === 'loopA') {
+    problems.push('worktreeParents: an owner loop survived as a cycle');
+  }
+  if (worktrees.has('worker')) {
+    problems.push('worktreeParents: an owned worktree is still listed as an orphan of its repo');
+  }
+}
+
+// A pane whose `role` is the configured leader role (`architect` by default)
+// sorts first in its workspace and heads its split, whatever the activity of
+// the panes beside it.
+{
+  const { Frame } = require('../lib/frame');
+  const frame = new Frame('check');
+  frame.lastWorkingAt = new Map([
+    ['ws:busy', 60000 * 5],
+    ['ws:arch', 60000],
+    ['ws:split', 60000 * 2],
+  ]);
+  const rows = [
+    { workspace: 'ws', tab: 't1', pane: 'ws:busy', role: '' },
+    { workspace: 'ws', tab: 't2', pane: 'ws:split', role: '' },
+    { workspace: 'ws', tab: 't2', pane: 'ws:arch', role: 'architect' },
+  ];
+  const keys = frame.sortKeys(rows, new Map(), new Map());
+  const order = frame.displayOrder(rows, 'grouped', keys).map((row) => row.pane);
+  if (order[0] !== 'ws:arch') {
+    problems.push(`architect role: order is ${order.join(', ')}, expected ws:arch first`);
+  }
+  if (keys.splitChild(rows[2]) || !keys.splitChild(rows[1])) {
+    problems.push('architect role: the architect does not head its split');
+  }
+}
+
 // Liveness is asked of the endpoint, never of a pid file.
 //
 // `kill(pid, 0)` on the pid file only says that SOME process has the number,
