@@ -486,29 +486,32 @@ if (unstable) {
   }
 }
 
+// Checks that write tokens record them here instead of reaching Herdr. One
+// stub for the whole script, so concurrent checks never restore the real
+// writer under one another; each check uses pane ids of its own.
+const herdrWrites = new Map();
+require('../lib/herdr').reportMetadataAsync = async (pane, _source, tokens) => {
+  if (!herdrWrites.has(pane)) herdrWrites.set(pane, []);
+  herdrWrites.get(pane).push(tokens);
+  return true;
+};
+const gapsUnder = (panes) => panes.filter((pane) => herdrWrites.get(pane)?.at(-1)?.gap);
+
 // The flat list's gaps close a whole group, not each workspace in it: none
 // between an architect and its workers, one after the group's last row, none
 // after the last row of the list.
 {
-  const herdr = require('../lib/herdr');
   const { writeGaps } = require('../lib/state');
-  const sent = new Map();
-  const report = herdr.reportMetadataAsync;
-  herdr.reportMetadataAsync = async (pane, _source, tokens) => {
-    sent.set(pane, tokens.gap);
-    return true;
-  };
   const rows = [
-    ['a', 'a:p1'],
-    ['m', 'm:p1'],
-    ['m', 'm:p2'],
-    ['b', 'b:p1'],
+    ['a', 'flat-a:p1'],
+    ['m', 'flat-m:p1'],
+    ['m', 'flat-m:p2'],
+    ['b', 'flat-b:p1'],
   ].map(([workspace, pane]) => ({ workspace, pane }));
   writeGaps('check', rows, new Map([['m', 'a']])).then(() => {
-    herdr.reportMetadataAsync = report;
-    const gaps = [...sent].filter(([, gap]) => gap).map(([pane]) => pane);
-    if (gaps.join() !== 'm:p2') {
-      problems.push(`writeGaps: gaps under ${gaps.join(', ') || 'nothing'}, expected m:p2`);
+    const gaps = gapsUnder(rows.map((row) => row.pane));
+    if (gaps.join() !== 'flat-m:p2') {
+      problems.push(`writeGaps: gaps under ${gaps.join(', ') || 'nothing'}, expected flat-m:p2`);
     }
   });
 }
@@ -516,25 +519,17 @@ if (unstable) {
 // With headers, the gap closes a family too: none between an architect and
 // its first worker, none between two workers, one after the last.
 {
-  const herdr = require('../lib/herdr');
   const { writeGroups } = require('../lib/state');
-  const sent = new Map();
-  const report = herdr.reportMetadataAsync;
-  herdr.reportMetadataAsync = async (pane, _source, tokens) => {
-    sent.set(pane, tokens.gap);
-    return true;
-  };
-  const rows = ['a', 'm1', 'm2', 'b'].map((workspace) => ({ workspace, pane: `${workspace}:p1` }));
+  const rows = ['a', 'm1', 'm2', 'b'].map((workspace) => ({ workspace, pane: `headed-${workspace}:p1` }));
   const labels = new Map(rows.map((row) => [row.workspace, row.workspace]));
   const parentOf = new Map([
     ['m1', 'a'],
     ['m2', 'a'],
   ]);
   writeGroups('check', rows, labels, new Set(), { parentOf }).then(() => {
-    herdr.reportMetadataAsync = report;
-    const gaps = [...sent].filter(([, gap]) => gap).map(([pane]) => pane);
-    if (gaps.join() !== 'm2:p1,b:p1') {
-      problems.push(`writeGroups: gaps under ${gaps.join(', ') || 'nothing'}, expected m2:p1, b:p1`);
+    const gaps = gapsUnder(rows.map((row) => row.pane));
+    if (gaps.join() !== 'headed-m2:p1,headed-b:p1') {
+      problems.push(`writeGroups: gaps under ${gaps.join(', ') || 'nothing'}, expected headed-m2:p1, headed-b:p1`);
     }
   });
 }
@@ -584,6 +579,34 @@ if (unstable) {
   if (second.get('b') !== first.get('b') || second.get('c') !== first.get('c')) {
     problems.push('groupColorSlots: a group changed colour when another group left');
   }
+}
+
+// The sort keys are republished when any of them moves, tab_key included: a
+// tab's key follows its busiest pane, so it can change while this pane's own
+// sort_key and ws_key stay put, and a stale tab_key makes Herdr's order
+// disagree with the one the group furniture was drawn for.
+{
+  const { Frame } = require('../lib/frame');
+  const frame = new Frame('check');
+  const entry = { pane: 'sortkeys:p1', workspace: 'w', tab: 't', name: 'claude', title: 'x' };
+  const keysWith = (tabKey) => ({
+    minuteKey: () => '000000000001',
+    wsKeys: new Map([['w', 'ws']]),
+    tabKeys: new Map([['sortkeys:p1', tabKey]]),
+  });
+  const run = async (tabKey) => {
+    const jobs = [];
+    frame.paneJobs(entry, 'idle', { tabs: new Map(), keys: keysWith(tabKey), indent: '', spinStep: 0 }, 0, [], jobs);
+    await Promise.all(jobs);
+  };
+  (async () => {
+    await run('0-000000000001-t');
+    await run('0-000000000002-t');
+    const sent = (herdrWrites.get('sortkeys:p1') ?? []).filter((t) => 'tab_key' in t).map((t) => t.tab_key);
+    if (sent.join() !== '0-000000000001-t,0-000000000002-t') {
+      problems.push(`paneJobs: tab_key writes were ${sent.join(', ') || 'none'}, expected both keys`);
+    }
+  })();
 }
 
 // Liveness is asked of the endpoint, never of a pid file.
