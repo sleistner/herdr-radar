@@ -609,6 +609,22 @@ const gapsUnder = (panes) => panes.filter((pane) => herdrWrites.get(pane)?.at(-1
   })();
 }
 
+// writeAtomic keeps a symlinked config a symlink: it writes the link's
+// target, so a config kept in a dotfiles repo stays linked.
+{
+  const os = require('node:os');
+  const { writeAtomic } = require('../lib/toml-blocks');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'radar-check-'));
+  const real = path.join(dir, 'real.toml');
+  const link = path.join(dir, 'config.toml');
+  fs.writeFileSync(real, 'old');
+  fs.symlinkSync(real, link);
+  writeAtomic(link, 'new');
+  if (!fs.lstatSync(link).isSymbolicLink()) problems.push('writeAtomic: replaced a symlinked config with a plain file');
+  if (fs.readFileSync(real, 'utf8') !== 'new') problems.push('writeAtomic: the symlink target was not updated');
+  fs.rmSync(dir, { recursive: true, force: true });
+}
+
 // Liveness is asked of the endpoint, never of a pid file.
 //
 // `kill(pid, 0)` on the pid file only says that SOME process has the number,
