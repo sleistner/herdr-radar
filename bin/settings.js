@@ -138,6 +138,12 @@ const FIELDS = [
   },
   { key: 'group_gap', kind: 'bool', fallback: true, help: 'A blank row between workspace groups.' },
   {
+    key: 'split_corner',
+    kind: 'bool',
+    fallback: false,
+    help: 'Hang the other panes of a split screen off the first with a corner; off draws them as plain rows.',
+  },
+  {
     key: 'row_label',
     kind: 'enum',
     options: ['title', 'tab', 'both'],
