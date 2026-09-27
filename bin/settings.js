@@ -263,6 +263,12 @@ const INV = '\x1b[7m';
 const ACCENT = '\x1b[38;5;110m';
 const WARN = '\x1b[38;5;179m';
 
+// A setting's name as the file spells it: `colors.active_row_bg_light` for a
+// key inside a table.
+function fieldName(field) {
+  return field.table ? `${field.table}.${field.key}` : field.key;
+}
+
 function codepoint(ch) {
   return ch ? `U+${ch.codePointAt(0).toString(16).toUpperCase().padStart(4, '0')}` : '';
 }
@@ -436,7 +442,8 @@ class Editor {
 
   render() {
     const cols = Math.max(60, (process.stdout.columns || 84) - 2);
-    const keyW = 24;
+    // The name column fits the longest name, so every value starts in one column.
+    const keyW = Math.max(...FIELDS.map((field) => width(fieldName(field)))) + 2;
     const out = [''];
     // Title left, plugin id right, the gap between them measured — not
     // guessed — so the pair fits the popup's width exactly and never wraps.
@@ -447,7 +454,7 @@ class Editor {
     FIELDS.forEach((field, i) => {
       const selected = i === this.cursor;
       const changed = this.values.get(field) !== this.saved.get(field);
-      const name = field.table ? `${field.table}.${field.key}` : field.key;
+      const name = fieldName(field);
       const value =
         selected && this.editing ? `${INV}${this.editing.buffer}${R}${DIM}▏${R}` : show(field, this.values.get(field));
       const marker = changed ? `${WARN}*${R}` : ' ';
