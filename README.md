@@ -216,6 +216,52 @@ The row then wears the GLM mark and name. `--clear-display-agent` takes it back.
 this plugin does not recognise is ignored rather than blanking the row, so a human label
 such as `Claude: auth` still leaves the Claude mark in place.
 
+## How rows are grouped
+
+A group is one top-level workspace and every workspace hanging under it. By
+default the hanging follows git: a linked worktree hangs under the workspace on
+its repository's main checkout, and a second workspace on that same checkout
+stays a peer beside it.
+
+That fits one person per project. Run a lead agent with helpers (an
+orchestrator and its workers, a reviewer beside an author, several projects in
+one repository) and the list should show who works for whom instead. Two
+tokens say so; whoever starts the helper sets them:
+
+```sh
+# Hang a workspace under another one, whatever it has checked out.
+herdr workspace report-metadata <helper-workspace-id> --source my-tool --token owner=<lead-workspace-id>
+
+# Put a pane first in its group, ahead of busier panes.
+herdr pane report-metadata <lead-pane-id> --source my-tool --token role=architect
+```
+
+- `owner` names an open workspace id. A closed or unknown id is ignored and the
+  workspace falls back to git. The tree stays one level deep: a helper of a
+  helper hangs under the top of the chain, and a loop of owners is broken.
+- `role` is matched against the `leader_role` setting (`architect` unless you
+  change it). The leader's tab ranks first in its workspace and the leader
+  heads its split, so the lead session sits at the top of its group while its
+  helpers work.
+
+With `group_colors` on, each group takes one of twelve colours and keeps it
+while it stays on the list. The header wears it, and a stripe (`▌`) in that
+colour runs down the left edge of every row in the group, so a group reads as
+one block. Past twelve groups the colours repeat.
+
+Headers, indent and gaps are separate switches. `group_headers` turns the
+header rows on and off, `group_indent` sets the indent (at `0` there is no tree
+to draw, so no corners either), and `group_gap` puts a blank row after each
+group — never between a lead and its helpers.
+
+`row_label` picks what names an agent row: the session's title, its tab's
+name, or both. Use `tab` when you name tabs after their sessions, so the name
+is not written twice.
+
+Herdr puts a ` · ` between any two differently coloured cells of a row and has
+no row backgrounds or sidebar clicks for a plugin to use, so the stripe is a
+cell of its own and a group cannot be folded from the sidebar.
+
 ## Settings
 
 `prefix+,` opens the settings popup: `↑↓` select, `←→` change, `↵` edit a text value, `r`
@@ -232,7 +278,7 @@ the config file and restarts the daemon.
 | `idle_grace_seconds` | `2.5` | idle must persist this long to count as a finished turn |
 | `activity_fresh_minutes` | `15` | how long after the last turn a pane still reads as fresh |
 | `activity_stale_minutes` | `120` | how long without a turn before the row dims |
-| `group_indent` | `2` | spaces per level of the tree; `0` for no indent |
+| `group_indent` | `2` | spaces per level of the tree; `0` for no indent and no tree lines |
 | `group_headers` | `true` | a header row naming each workspace |
 | `group_colors` | `true` | a colour and a left stripe per group; an `owner` workspace token picks the group |
 | `leader_role` | `architect` | a pane whose `role` token has this value sorts first in its group; empty for none |
