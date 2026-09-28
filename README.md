@@ -249,11 +249,10 @@ herdr pane report-metadata <coordinator-pane-id> --source my-tool --token role=c
   helpers work.
 
 With `group_colors` on, each group takes one of twelve colours and keeps it
-while it stays on the list. The header wears it, and a stripe (`▌`) in that
+while it stays on the list. The header wears it, and a stripe (`█`) in that
 colour runs down the left edge of every row in the group, so a group reads as
-one block. Workers use `▎`, leaders use `▌`, and coordinators use `█`: each
-stripe is one column wide, with a different thickness. Past twelve groups the
-colours repeat.
+one block. Workers use `▎`; leaders and coordinators use `█`. Every stripe is
+one column wide. Past twelve groups the colours repeat.
 
 Headers, indent and gaps are separate switches. `group_headers` turns the
 header rows on and off, `group_indent` sets the indent (at `0` there is no tree

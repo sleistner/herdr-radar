@@ -429,7 +429,7 @@ for (const variant of ['light', 'dark']) {
   if (!readme.includes('| `coordinator_role` | `coordinator` |')) {
     problems.push('README: coordinator_role is missing beside leader_role');
   }
-  if (!readme.includes('Workers use `▎`, leaders use `▌`, and coordinators use `█`')) {
+  if (!readme.includes('Workers use `▎`; leaders and coordinators use `█`')) {
     problems.push('README: coordinator stripe glyph is missing or incorrectly named');
   }
 }
@@ -716,8 +716,8 @@ const gapsUnder = (panes) => panes.filter((pane) => herdrWrites.get(pane)?.at(-1
   if (!coordinatorBand.startsWith('█')) {
     problems.push(`coordinator role: band is ${JSON.stringify(coordinatorBand)}, not a full block`);
   }
-  if (!leaderBand.startsWith('▌')) {
-    problems.push(`architect role: leader band is ${JSON.stringify(leaderBand)}, not a half block`);
+  if (!leaderBand.startsWith('█')) {
+    problems.push(`architect role: leader band is ${JSON.stringify(leaderBand)}, not a full block`);
   }
   if (!memberBand.startsWith('▎')) {
     problems.push(`architect role: member band is ${JSON.stringify(memberBand)}, not a thin block`);

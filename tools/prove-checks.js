@@ -161,7 +161,7 @@ const cases = [
     "cell('$title_done', state.done),",
     'leader title: a state cell without its bold-only rule',
   ],
-  ['lib/palette.js', "leaderBar: '▌'", "leaderBar: '█'", 'leader band: half-block guard removed'],
+  ['lib/palette.js', "leaderBar: '█'", "leaderBar: '▌'", 'leader band: full-block guard removed'],
   ['lib/palette.js', "bar: '▎'", "bar: '▌'", 'worker band: thin-block guard removed'],
   [
     'lib/managed-config.js',
@@ -191,9 +191,9 @@ const cases = [
   ],
   [
     'README.md',
-    'Workers use `▎`, leaders use `▌`, and coordinators use `█`',
-    'Workers use `▌`, leaders use `█`, and coordinators use `█▌`',
-    'coordinator role: README names the old stripe glyphs',
+    'Workers use `▎`; leaders and coordinators use `█`',
+    'Workers use `▌`; leaders and coordinators use `█`',
+    'role stripes: README names the worker and full-block glyphs',
   ],
   [
     'lib/frame.js',
