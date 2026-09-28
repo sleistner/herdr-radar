@@ -130,6 +130,27 @@ const cases = [
     'return `space_${display}`;',
     'spaces: idle tier not collapsed, so the token clears every state mark',
   ],
+  // Leader emphasis reuses the existing title cells: an invisible value marker
+  // enables bold, and the stripe's slot marks colour either bar character.
+  [
+    'lib/state.js',
+    "${leader ? LEADER_MARK : ''}${line.titlePrefix}${title}",
+    '${line.titlePrefix}${title}',
+    'leader title: removing its invisible marker loses the bold signal',
+  ],
+  [
+    'lib/managed-config.js',
+    "leaderTitleCell('$title_done', state.done),",
+    "cell('$title_done', state.done),",
+    'leader title: a state cell without its bold-only rule',
+  ],
+  ['lib/palette.js', "leaderBar: '█'", "leaderBar: '▌'", 'leader band: full block guard removed'],
+  [
+    'lib/managed-config.js',
+    '.map((fg, index) => `{ contains = "${\'\\\\u2060\'.repeat(index + 1)}", fg = "${fg}" }`)',
+    '.map((fg, index) => `{ contains = "${palette.band.bar}${\'\\\\u2060\'.repeat(index + 1)}", fg = "${fg}" }`)',
+    'leader band: colour rule tied to the half-block character',
+  ],
   // Adding rather than removing: a removed token trips the mapping check above
   // before this one, so the only way to reach it is a token nothing draws.
   [

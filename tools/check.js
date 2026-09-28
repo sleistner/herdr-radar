@@ -313,6 +313,89 @@ for (const variant of ['light', 'dark']) {
   }
 }
 
+// A leader uses the same title token as its peers, marked invisibly in the
+// value. That costs no row slot; each state-coloured title cell adds only a
+// bold rule, so its own foreground colour still wins.
+{
+  const title = 'Keep this title readable';
+  const line = { band: null, mark: '·', split: '', logo: '', titlePrefix: '' };
+  for (const display of state.STATES) {
+    const leader = state.stateTokens(display, line, title, true)[`title_${display}`];
+    const member = state.stateTokens(display, line, title, false)[`title_${display}`];
+    if (leader !== `${state.LEADER_MARK}${title}`) {
+      problems.push(`leader title (${display}): missing the invisible bold marker`);
+    }
+    if (member !== title) {
+      problems.push(`member title (${display}): unexpectedly carries the leader bold marker`);
+    }
+  }
+  for (const variant of ['light', 'dark']) {
+    const block = managed.sidebarBlock(variant);
+    for (let slot = 0; slot < palette.groupColors.length; slot += 1) {
+      const mark = '\\u2060'.repeat(slot + 1);
+      if (!block.includes(`contains = "${mark}"`)) {
+        problems.push(`sidebar block (${variant}): band slot ${slot + 1} is not coloured by its mark`);
+      }
+    }
+    if (block.includes(`contains = "${palette.band.bar}`)) {
+      problems.push(`sidebar block (${variant}): band colour depends on the half-block character`);
+    }
+    for (const display of state.STATES) {
+      const titleCell = new RegExp(
+        `token = "\\$title_${display}", fg = "([^"]+)", bold = (true|false), dim = (true|false), ` +
+          'rules = \\[{ contains = "\\\\u2063", bold = true }\\]',
+      );
+      if (!titleCell.test(block)) {
+        problems.push(`sidebar block (${variant}): $title_${display} has no bold-only leader rule`);
+      }
+    }
+  }
+}
+
+// Herdr's sidebar limits apply to generated text, not our intentions. Count
+// both kinds directly from the generated block: nested rules stay inside their
+// cell, while rows are counted at their outer bracket depth.
+function generatedRows(block) {
+  const start = block.indexOf('rows = [');
+  if (start < 0) return [];
+  const bodyStart = block.indexOf('[', start);
+  let depth = 0;
+  for (let index = bodyStart; index < block.length; index += 1) {
+    if (block[index] === '[') depth += 1;
+    if (block[index] === ']') {
+      depth -= 1;
+      if (depth === 0) {
+        const body = block.slice(bodyStart, index + 1);
+        const rows = [];
+        let rowDepth = 0;
+        let rowStart = 0;
+        for (let offset = 0; offset < body.length; offset += 1) {
+          if (body[offset] === '[') {
+            if (rowDepth === 1) rowStart = offset;
+            rowDepth += 1;
+          } else if (body[offset] === ']') {
+            rowDepth -= 1;
+            if (rowDepth === 1) rows.push(body.slice(rowStart, offset + 1));
+          }
+        }
+        return rows;
+      }
+    }
+  }
+  return [];
+}
+for (const variant of ['light', 'dark']) {
+  const block = managed.sidebarBlock(variant);
+  for (const row of generatedRows(block)) {
+    const tokens = (row.match(/token = "/g) ?? []).length + (row.match(/(?<![:=] )"\$\w+"/g) ?? []).length;
+    if (tokens > 16) problems.push(`sidebar block (${variant}): row has ${tokens} tokens, over Herdr's 16-token limit`);
+    for (const rules of row.matchAll(/rules = \[([^\]]*)\]/g)) {
+      const count = (rules[1].match(/\{ contains = /g) ?? []).length;
+      if (count > 16) problems.push(`sidebar block (${variant}): cell has ${count} rules, over Herdr's 16-rule limit`);
+    }
+  }
+}
+
 // A vendor this plugin can name never goes nameless.
 //
 // The row is `logo · title`. When the title says nothing the vendor's name
@@ -575,6 +658,14 @@ const gapsUnder = (panes) => panes.filter((pane) => herdrWrites.get(pane)?.at(-1
   }
   if (keys.splitChild(rows[2]) || !keys.splitChild(rows[1])) {
     problems.push('architect role: the architect does not head its split');
+  }
+  const leaderBand = state.bandValue(0, '', { leader: keys.leaders.has(rows[2].pane) });
+  const memberBand = state.bandValue(0, '', { leader: keys.leaders.has(rows[0].pane) });
+  if (!leaderBand.startsWith('█')) {
+    problems.push(`architect role: leader band is ${JSON.stringify(leaderBand)}, not a full block`);
+  }
+  if (!memberBand.startsWith('▌')) {
+    problems.push(`architect role: member band is ${JSON.stringify(memberBand)}, not a half block`);
   }
 }
 
