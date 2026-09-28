@@ -144,7 +144,8 @@ const cases = [
     "cell('$title_done', state.done),",
     'leader title: a state cell without its bold-only rule',
   ],
-  ['lib/palette.js', "leaderBar: '█'", "leaderBar: '▌'", 'leader band: full block guard removed'],
+  ['lib/palette.js', "leaderBar: '▌'", "leaderBar: '█'", 'leader band: half-block guard removed'],
+  ['lib/palette.js', "bar: '▎'", "bar: '▌'", 'worker band: thin-block guard removed'],
   [
     'lib/managed-config.js',
     '.map((fg, index) => `{ contains = "${\'\\\\u2060\'.repeat(index + 1)}", fg = "${fg}" }`)',
@@ -171,24 +172,24 @@ const cases = [
     '| `coordinator_rank` | `coordinator` |',
     'coordinator role: setting removed from README',
   ],
-  ['README.md', 'two-column `█▌` bar', 'three-column `███` bar', 'coordinator role: README names the old stripe glyph'],
+  [
+    'README.md',
+    'Workers use `▎`, leaders use `▌`, and coordinators use `█`',
+    'Workers use `▌`, leaders use `█`, and coordinators use `█▌`',
+    'coordinator role: README names the old stripe glyphs',
+  ],
   [
     'lib/frame.js',
     'const coordinators = config.coordinatorRole',
     'const coordinators = false && config.coordinatorRole',
     'coordinator role: rank ignored in group order',
   ],
-  [
-    'lib/palette.js',
-    "coordinatorBar: '█▌'",
-    "coordinatorBar: '█'",
-    'coordinator role: two-column stripe guard removed',
-  ],
+  ['lib/palette.js', "coordinatorBar: '█'", "coordinatorBar: '▌'", 'coordinator role: full-block stripe guard removed'],
   [
     'bin/settings.js',
     '  return w;\n}',
     '  return w + 1;\n}',
-    'coordinator role: width helper no longer reports the two-block bar as two columns',
+    'coordinator role: width helper no longer reports every rank as one column',
   ],
   [
     'lib/state.js',
