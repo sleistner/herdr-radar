@@ -456,6 +456,39 @@ const cases = [
     true,
     'test/scroll-window.test.js',
   ],
+  // lib/settings-sections.js — Shift+Tab wraps from the first tab to the last.
+  [
+    'lib/settings-sections.js',
+    'return (index + direction + count) % count;',
+    'return (index + direction) % count;',
+    'settings: Shift+Tab does not wrap to the final section',
+    true,
+    'test/settings-sections.test.js',
+  ],
+  [
+    'bin/settings.js',
+    'const TITLE_ROWS = 0;',
+    'const TITLE_ROWS = 1;',
+    'settings: duplicate popup title takes a row from the settings list',
+    true,
+    'test/settings-sections.test.js',
+  ],
+  [
+    'lib/settings-sections.js',
+    'if (FORWARD_SECTION_KEYS.has(key)) return 1;',
+    'if (FORWARD_SECTION_KEYS.has(key)) return 0;',
+    'settings: Right and l do not select the next section',
+    true,
+    'test/settings-sections.test.js',
+  ],
+  [
+    'lib/settings-sections.js',
+    'return Math.max(...sections.map((section) => section.fields.length));',
+    'return Math.min(...sections.map((section) => section.fields.length));',
+    'settings: popup height follows the shortest tab instead of the largest',
+    true,
+    'test/settings-sections.test.js',
+  ],
 
   // lib/toml-blocks.js — a symlinked config stays linked through a save.
   [
