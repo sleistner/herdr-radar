@@ -26,7 +26,7 @@ const view = require('../lib/view');
 const managed = require('../lib/managed-config');
 const { detachedNode } = require('../lib/spawn');
 const { scrollTop } = require('../lib/scroll-window');
-const { settingsSections, nextSection, sectionWindow } = require('../lib/settings-sections');
+const { settingsSections, nextSection, sectionDirection, sectionWindow } = require('../lib/settings-sections');
 const { pluginId, pluginConfigDir, ensureDir, stateRoot } = require('../lib/paths');
 const { editTopLevel, editTable, writeAtomic } = require('../lib/toml-blocks');
 const identity = require('../lib/identity');
@@ -137,8 +137,20 @@ const FIELDS = [
     fallback: 2,
     help: 'Spaces per level of the tree; 0 = no indent.',
   },
-  { key: 'group_headers', section: 'Groups', kind: 'bool', fallback: true, help: 'A header row naming each workspace.' },
-  { key: 'group_colors', section: 'Groups', kind: 'bool', fallback: true, help: 'A colour and a left stripe per group.' },
+  {
+    key: 'group_headers',
+    section: 'Groups',
+    kind: 'bool',
+    fallback: true,
+    help: 'A header row naming each workspace.',
+  },
+  {
+    key: 'group_colors',
+    section: 'Groups',
+    kind: 'bool',
+    fallback: true,
+    help: 'A colour and a left stripe per group.',
+  },
   {
     key: 'leader_role',
     section: 'Groups',
@@ -383,8 +395,8 @@ const MINIMUM_LIST_ROWS = 3;
 const STATUS_ROWS = 1;
 const RULE_INDENT = 1;
 const TAB_SEPARATOR = ' · ';
-const FULL_KEY_HINT = '↑↓ select · tab section · ←→ change · ↵ edit · r default · s save & apply · q close';
-const SHORT_KEY_HINT = '↑↓ select · tab section · ←→ change · ↵ edit · r · s · q';
+const FULL_KEY_HINT = '↑↓ select · ←→ tab · ↵ change · +/- step · r default · s save · q close';
+const SHORT_KEY_HINT = '↑↓ select · ←→ tab · ↵ change · +/- · r · s · q';
 
 // The name column fits the longest name, so every value starts in one column.
 function nameColumnWidth() {
@@ -621,8 +633,9 @@ class Editor {
     else if (k === '\x1b[B' || k === 'j') this.cursor = (this.cursor + 1) % this.fields.length;
     else if (k === '\t') this.switchSection(1);
     else if (k === '\x1b[Z') this.switchSection(-1);
-    else if (k === '\x1b[C' || k === 'l' || k === ' ' || k === '+') this.step(1);
-    else if (k === '\x1b[D' || k === 'h' || k === '-') this.step(-1);
+    else if (sectionDirection(k)) this.switchSection(sectionDirection(k));
+    else if (k === ' ' || k === '+') this.step(1);
+    else if (k === '-') this.step(-1);
     else if (k === '\r') this.field.kind === 'bool' || this.field.kind === 'enum' ? this.step(1) : this.beginEdit();
     else if (k === 'r') this.values.set(this.field, undefined);
     else if (k === 's') await this.save();

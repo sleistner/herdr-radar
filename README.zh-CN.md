@@ -196,8 +196,9 @@ exec claude "$@"
 
 ## 设置
 
-`prefix+,` 打开设置弹窗：`↑↓` 选，`←→` 改，`↵` 编辑文本，`r` 恢复默认，`s` 保存并应用，
-`q` 关闭。保存只改写配置文件里变动的那几行，然后重启守护进程。
+`prefix+,` 打开设置弹窗：`↑↓` 选择，`←→` 或 `h`/`l` 切换标签，`↵` 改 bool/enum（文本则开始编辑），
+`Space`/`+` 和 `-` 前进/后退数值，`r` 恢复默认，`s` 保存并应用，`q` 关闭。保存只改写配置文件里变动的那几行，
+然后重启守护进程。
 
 ### 面板
 
@@ -222,6 +223,10 @@ exec claude "$@"
 | 项 | 默认 | 作用 |
 | --- | --- | --- |
 | `group_indent` | `2` | 成员缩进几格，`0` 平铺 |
+| `group_headers` | `true` | 每个工作区名显示一行表头 |
+| `group_colors` | `true` | 每组一色和左侧条纹；工作区的 `owner` token 选择所属组 |
+| `leader_role` | `architect` | `role` token 为此值的面板在组内排第一；留空关闭 |
+| `coordinator_role` | `coordinator` | `role` token 为此值的面板排在 leader 之上；留空关闭 |
 | `group_gap` | `true` | 组之间留空行 |
 | `split_corner` | `false` | 分屏的其余面板用 `├─` 角标挂在第一个下面 |
 | `trim_group_prefix` | `true` | 标题开头与分组表头同名时去掉那一截 |

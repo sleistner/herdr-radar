@@ -532,6 +532,16 @@ const cases = [
     true,
     'test/settings-sections.test.js',
   ],
+  // lib/settings-sections.js — left/right (and h/l) navigate tabs; they do
+  // not change the selected setting's value.
+  [
+    'lib/settings-sections.js',
+    "if (key === '\\\\x1b[C' || key === 'l') return 1;",
+    'return 0;',
+    'settings: right arrow no longer advances to the next section',
+    true,
+    'test/settings-sections.test.js',
+  ],
 
   // lib/toml-blocks.js — a symlinked config stays linked through a save.
   [

@@ -270,8 +270,9 @@ cell of its own and a group cannot be folded from the sidebar.
 
 ## Settings
 
-`prefix+,` opens the settings popup: `↑↓` select, `←→` change, `↵` edit a text value, `r`
-reset to default, `s` save and apply, `q` close. Saving rewrites only the changed lines of
+`prefix+,` opens the settings popup: `↑↓` select, `←→` or `h`/`l` change tabs, `↵` changes a
+bool or enum (or edits text), `Space`/`+` and `-` step values, `r` resets to default, `s` saves
+and applies, `q` closes. Saving rewrites only the changed lines of
 the config file and restarts the daemon.
 
 ### Panel
