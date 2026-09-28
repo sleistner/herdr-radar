@@ -172,12 +172,24 @@ const cases = [
     'coordinator role: setting removed from README',
   ],
   [
+    'README.md',
+    '`⦀` (U+2980 TRIPLE VERTICAL BAR DELIMITER)',
+    '`☰` (U+2630 TRIGRAM FOR HEAVEN)',
+    'coordinator role: README names the old stripe glyph',
+  ],
+  [
     'lib/frame.js',
     'const coordinators = config.coordinatorRole',
     'const coordinators = false && config.coordinatorRole',
     'coordinator role: rank ignored in group order',
   ],
-  ['lib/palette.js', "coordinatorBar: '☰'", "coordinatorBar: '█'", 'coordinator role: menu stripe guard removed'],
+  ['lib/palette.js', "coordinatorBar: '⦀'", "coordinatorBar: '█'", 'coordinator role: delimiter stripe guard removed'],
+  [
+    'bin/settings.js',
+    '  return w;\n}',
+    '  return w + 1;\n}',
+    'coordinator role: width helper no longer reports the delimiter as one column',
+  ],
   [
     'lib/state.js',
     'const bar = coordinator ? palette.band.coordinatorBar : leader ? palette.band.leaderBar : palette.band.bar;',

@@ -575,18 +575,22 @@ function main() {
   editor.render();
 }
 
-process.on('uncaughtException', (error) => {
-  crashLog(error?.stack ?? String(error));
-  process.exit(1);
-});
-process.on('unhandledRejection', (error) => {
-  crashLog(error?.stack ?? String(error));
-  process.exit(1);
-});
+if (require.main === module) {
+  process.on('uncaughtException', (error) => {
+    crashLog(error?.stack ?? String(error));
+    process.exit(1);
+  });
+  process.on('unhandledRejection', (error) => {
+    crashLog(error?.stack ?? String(error));
+    process.exit(1);
+  });
 
-try {
-  main();
-} catch (error) {
-  crashLog(error?.stack ?? String(error));
-  throw error;
+  try {
+    main();
+  } catch (error) {
+    crashLog(error?.stack ?? String(error));
+    throw error;
+  }
 }
+
+module.exports = { width };

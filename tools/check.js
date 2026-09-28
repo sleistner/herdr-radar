@@ -429,6 +429,9 @@ for (const variant of ['light', 'dark']) {
   if (!readme.includes('| `coordinator_role` | `coordinator` |')) {
     problems.push('README: coordinator_role is missing beside leader_role');
   }
+  if (!readme.includes('`⦀` (U+2980 TRIPLE VERTICAL BAR DELIMITER)')) {
+    problems.push('README: coordinator stripe glyph is missing or incorrectly named');
+  }
 }
 
 // A vendor this plugin can name never goes nameless.
@@ -699,11 +702,13 @@ const gapsUnder = (panes) => panes.filter((pane) => herdrWrites.get(pane)?.at(-1
   if (!keys.coordinators.has(rows[3].pane) || keys.leaders.has(rows[3].pane)) {
     problems.push('coordinator role: coordinator rank is not distinct from the leader rank');
   }
+  const { width } = require('../bin/settings');
+  if (width('⦀') !== 1) problems.push(`coordinator role: ⦀ is ${width('⦀')} columns, not one`);
   const coordinatorBand = state.bandValue(0, '', { coordinator: keys.coordinators.has(rows[3].pane) });
   const leaderBand = state.bandValue(0, '', { leader: keys.leaders.has(rows[2].pane) });
   const memberBand = state.bandValue(0, '', {});
-  if (!coordinatorBand.startsWith('☰')) {
-    problems.push(`coordinator role: band is ${JSON.stringify(coordinatorBand)}, not a one-column menu`);
+  if (!coordinatorBand.startsWith('⦀')) {
+    problems.push(`coordinator role: band is ${JSON.stringify(coordinatorBand)}, not a one-column delimiter`);
   }
   if (!leaderBand.startsWith('█')) {
     problems.push(`architect role: leader band is ${JSON.stringify(leaderBand)}, not a full block`);
