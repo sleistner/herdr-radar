@@ -171,12 +171,7 @@ const cases = [
     '| `coordinator_rank` | `coordinator` |',
     'coordinator role: setting removed from README',
   ],
-  [
-    'README.md',
-    'three-column `███` bar',
-    'one-column `⦀` delimiter',
-    'coordinator role: README names the old stripe glyph',
-  ],
+  ['README.md', 'two-column `█▌` bar', 'three-column `███` bar', 'coordinator role: README names the old stripe glyph'],
   [
     'lib/frame.js',
     'const coordinators = config.coordinatorRole',
@@ -185,15 +180,15 @@ const cases = [
   ],
   [
     'lib/palette.js',
-    "coordinatorBar: '███'",
+    "coordinatorBar: '█▌'",
     "coordinatorBar: '█'",
-    'coordinator role: three-block stripe guard removed',
+    'coordinator role: two-column stripe guard removed',
   ],
   [
     'bin/settings.js',
     '  return w;\n}',
     '  return w + 1;\n}',
-    'coordinator role: width helper no longer reports the three-block bar as three columns',
+    'coordinator role: width helper no longer reports the two-block bar as two columns',
   ],
   [
     'lib/state.js',
