@@ -274,16 +274,27 @@ cell of its own and a group cannot be folded from the sidebar.
 reset to default, `s` save and apply, `q` close. Saving rewrites only the changed lines of
 the config file and restarts the daemon.
 
+### Panel
+
 | Option | Default | Does |
 | --- | --- | --- |
 | `agents_panel` | `plugin` | this plugin's panel, or `herdr` for Herdr's own |
 | `order` | `active` | `active` grouped by activity / `recent` flat / `off` Herdr's order |
-| `variant` | `auto` | logos from the icon font (`font`), plain Unicode (`text`), or `none`; `auto` recognises the font the plugin installed |
+| `reorder_workspaces` | `false` | make Herdr's workspace indices follow Radar's activity order |
+
+### Agent state
+
+| Option | Default | Does |
+| --- | --- | --- |
 | `done_hold` | `until_seen` | keep the tick until the pane is focused, or a number of seconds |
 | `blocked_hold` | `true` | keep the question mark until the agent works again |
 | `idle_grace_seconds` | `2.5` | idle must persist this long to count as a finished turn |
 | `activity_fresh_minutes` | `15` | how long after the last turn a pane still reads as fresh |
 | `activity_stale_minutes` | `120` | how long without a turn before the row dims |
+### Groups
+
+| Option | Default | Does |
+| --- | --- | --- |
 | `group_indent` | `2` | spaces per level of the tree; `0` for no indent and no tree lines |
 | `group_headers` | `true` | a header row naming each workspace |
 | `group_colors` | `true` | a colour and a left stripe per group; an `owner` workspace token picks the group |
@@ -291,10 +302,20 @@ the config file and restarts the daemon.
 | `coordinator_role` | `coordinator` | a pane whose `role` token has this value ranks above the leader; empty for none |
 | `group_gap` | `true` | a blank row between groups |
 | `split_corner` | `false` | hang the other panes of a split screen off the first with a `├─` corner |
-| `reorder_workspaces` | `false` | make Herdr's workspace indices follow Radar's activity order |
-| `row_label` | `title` | what names an agent row: `title`, `tab` (the tab's name) or `both`; replaces `show_tab` |
 | `trim_group_prefix` | `true` | drop the workspace name from a title when the header above already shows it |
 | `worktree_mark` | `U+F418` | the mark on a worktree header, needs a Nerd Font; empty for none |
+
+### Rows
+
+| Option | Default | Does |
+| --- | --- | --- |
+| `row_label` | `title` | what names an agent row: `title`, `tab` (the tab's name) or `both`; replaces `show_tab` |
+| `variant` | `auto` | logos from the icon font (`font`), plain Unicode (`text`), or `none`; `auto` recognises the font the plugin installed |
+
+### Appearance
+
+| Option | Default | Does |
+| --- | --- | --- |
 | `follow_appearance` | `true` | switch Herdr's theme with the desktop's light/dark |
 | `colors.active_row_bg_light` | `#b9cdf2` | selected-row fill for a light theme; empty keeps the theme's own |
 | `colors.active_row_bg_dark` | `#414868` | selected-row fill for a dark theme |

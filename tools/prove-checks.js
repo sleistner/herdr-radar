@@ -523,6 +523,15 @@ const cases = [
     true,
     'test/scroll-window.test.js',
   ],
+  // lib/settings-sections.js — Shift+Tab wraps from the first tab to the last.
+  [
+    'lib/settings-sections.js',
+    'return (index + direction + count) % count;',
+    'return (index + direction) % count;',
+    'settings: Shift+Tab does not wrap to the final section',
+    true,
+    'test/settings-sections.test.js',
+  ],
 
   // lib/toml-blocks.js — a symlinked config stays linked through a save.
   [

@@ -26,6 +26,7 @@ const view = require('../lib/view');
 const managed = require('../lib/managed-config');
 const { detachedNode } = require('../lib/spawn');
 const { scrollTop } = require('../lib/scroll-window');
+const { settingsSections, nextSection, sectionWindow } = require('../lib/settings-sections');
 const { pluginId, pluginConfigDir, ensureDir, stateRoot } = require('../lib/paths');
 const { editTopLevel, editTable, writeAtomic } = require('../lib/toml-blocks');
 const identity = require('../lib/identity');
@@ -56,6 +57,7 @@ function orderValue() {
 const FIELDS = [
   {
     key: 'agents_panel',
+    section: 'Panel',
     kind: 'enum',
     options: ['plugin', 'herdr'],
     fallback: 'plugin',
@@ -65,6 +67,7 @@ const FIELDS = [
   },
   {
     key: 'order',
+    section: 'Panel',
     kind: 'enum',
     options: ['active', 'recent', 'off'],
     fallback: 'active',
@@ -74,27 +77,29 @@ const FIELDS = [
   },
   {
     key: 'reorder_workspaces',
+    section: 'Panel',
     kind: 'bool',
     fallback: false,
     help: 'Make Herdr workspace indices follow Radar activity order, so prefix+shift+1..9 follows the panel.',
   },
   {
-    key: 'variant',
-    kind: 'enum',
-    options: ['auto', 'font', 'text', 'none'],
-    fallback: 'auto',
-    help: 'Vendor logos and state marks from the icon font, plain Unicode, or none. auto asks fontconfig (Linux only).',
-  },
-  {
     key: 'done_hold',
+    section: 'Agent state',
     kind: 'enum',
     options: ['until_seen', 6, 15, 30, 60, 120],
     fallback: 'until_seen',
     help: 'How long the done tick stays: until you focus the pane, or a number of seconds.',
   },
-  { key: 'blocked_hold', kind: 'bool', fallback: true, help: 'Keep the question mark until the agent works again.' },
+  {
+    key: 'blocked_hold',
+    section: 'Agent state',
+    kind: 'bool',
+    fallback: true,
+    help: 'Keep the question mark until the agent works again.',
+  },
   {
     key: 'idle_grace_seconds',
+    section: 'Agent state',
     kind: 'number',
     step: 0.5,
     min: 0,
@@ -104,6 +109,7 @@ const FIELDS = [
   },
   {
     key: 'activity_fresh_minutes',
+    section: 'Agent state',
     kind: 'number',
     step: 5,
     min: 1,
@@ -113,6 +119,7 @@ const FIELDS = [
   },
   {
     key: 'activity_stale_minutes',
+    section: 'Agent state',
     kind: 'number',
     step: 30,
     min: 1,
@@ -122,6 +129,7 @@ const FIELDS = [
   },
   {
     key: 'group_indent',
+    section: 'Groups',
     kind: 'number',
     step: 1,
     min: 0,
@@ -129,29 +137,47 @@ const FIELDS = [
     fallback: 2,
     help: 'Spaces per level of the tree; 0 = no indent.',
   },
-  { key: 'group_headers', kind: 'bool', fallback: true, help: 'A header row naming each workspace.' },
-  { key: 'group_colors', kind: 'bool', fallback: true, help: 'A colour and a left stripe per group.' },
+  { key: 'group_headers', section: 'Groups', kind: 'bool', fallback: true, help: 'A header row naming each workspace.' },
+  { key: 'group_colors', section: 'Groups', kind: 'bool', fallback: true, help: 'A colour and a left stripe per group.' },
   {
     key: 'leader_role',
+    section: 'Groups',
     kind: 'text',
     fallback: 'architect',
     help: 'A pane whose `role` token has this value sorts first in its group. Empty for none.',
   },
   {
     key: 'coordinator_role',
+    section: 'Groups',
     kind: 'text',
     fallback: 'coordinator',
     help: 'A pane whose `role` token has this value ranks above the leader. Empty for none.',
   },
-  { key: 'group_gap', kind: 'bool', fallback: true, help: 'A blank row between workspace groups.' },
+  { key: 'group_gap', section: 'Groups', kind: 'bool', fallback: true, help: 'A blank row between workspace groups.' },
   {
     key: 'split_corner',
+    section: 'Groups',
     kind: 'bool',
     fallback: false,
     help: 'Hang the other panes of a split screen off the first with a corner; off draws them as plain rows.',
   },
   {
+    key: 'trim_group_prefix',
+    section: 'Groups',
+    kind: 'bool',
+    fallback: true,
+    help: 'Drop the workspace name from a title when the header above already shows it.',
+  },
+  {
+    key: 'worktree_mark',
+    section: 'Groups',
+    kind: 'glyph',
+    fallback: '\uf418',
+    help: 'The mark on a worktree header, after the branch corner. Enter a codepoint like U+F418, or empty for none.',
+  },
+  {
     key: 'row_label',
+    section: 'Rows',
     kind: 'enum',
     options: ['title', 'tab', 'both'],
     fallback: 'title',
@@ -162,25 +188,23 @@ const FIELDS = [
     help: "What names an agent row: the session's title, its tab's name, or both.",
   },
   {
-    key: 'trim_group_prefix',
-    kind: 'bool',
-    fallback: true,
-    help: 'Drop the workspace name from a title when the header above already shows it.',
-  },
-  {
-    key: 'worktree_mark',
-    kind: 'glyph',
-    fallback: '\uf418',
-    help: 'The mark on a worktree header, after the branch corner. Enter a codepoint like U+F418, or empty for none.',
+    key: 'variant',
+    section: 'Rows',
+    kind: 'enum',
+    options: ['auto', 'font', 'text', 'none'],
+    fallback: 'auto',
+    help: 'Vendor logos and state marks from the icon font, plain Unicode, or none. auto asks fontconfig (Linux only).',
   },
   {
     key: 'follow_appearance',
+    section: 'Appearance',
     kind: 'bool',
     fallback: true,
     help: "Follow the desktop's light/dark and switch Herdr's theme with it (once a minute).",
   },
   {
     key: 'active_row_bg_light',
+    section: 'Appearance',
     table: 'colors',
     kind: 'color',
     fallback: palette.chrome.light.active_row_bg,
@@ -188,12 +212,15 @@ const FIELDS = [
   },
   {
     key: 'active_row_bg_dark',
+    section: 'Appearance',
     table: 'colors',
     kind: 'color',
     fallback: palette.chrome.dark.active_row_bg,
     help: "Selected-row fill for a dark theme. Empty = keep the theme's own.",
   },
 ];
+
+const SETTINGS_SECTIONS = settingsSections(FIELDS);
 
 /* --------------------------------------------------------------- config */
 
@@ -331,6 +358,8 @@ const HELP_ROWS = 2;
 
 const BLANK_ABOVE_TITLE_ROWS = 1;
 const TITLE_ROWS = 1;
+const TAB_ROWS = 1;
+const RULE_ROWS = 1;
 const LIST_BOUNDARY_ROWS = 2;
 const GAP_BELOW_HELP_ROWS = 1;
 const KEY_HINT_ROWS = 1;
@@ -340,6 +369,8 @@ const TRAILING_NEWLINE_ROWS = 1;
 const FIXED_ROWS =
   BLANK_ABOVE_TITLE_ROWS +
   TITLE_ROWS +
+  TAB_ROWS +
+  RULE_ROWS +
   LIST_BOUNDARY_ROWS +
   HELP_ROWS +
   GAP_BELOW_HELP_ROWS +
@@ -350,6 +381,10 @@ const NAME_VALUE_GAP = 2;
 const DEFAULT_POPUP_ROWS = 26;
 const MINIMUM_LIST_ROWS = 3;
 const STATUS_ROWS = 1;
+const RULE_INDENT = 1;
+const TAB_SEPARATOR = ' · ';
+const FULL_KEY_HINT = '↑↓ select · tab section · ←→ change · ↵ edit · r default · s save & apply · q close';
+const SHORT_KEY_HINT = '↑↓ select · tab section · ←→ change · ↵ edit · r · s · q';
 
 // The name column fits the longest name, so every value starts in one column.
 function nameColumnWidth() {
@@ -364,16 +399,13 @@ function listRoom(hasStatus) {
 }
 
 // The visible rows scroll with the cursor; the hidden counts mark the rest.
-function listWindow(cursor, room, top) {
-  const nextTop = scrollTop(FIELDS.length, cursor, room, top);
-  const hiddenAbove = nextTop;
-  const hiddenBelow = Math.max(0, FIELDS.length - nextTop - room);
-  return {
-    top: nextTop,
-    fields: FIELDS.slice(nextTop, nextTop + room),
-    hiddenAbove,
-    hiddenBelow,
-  };
+function listWindow(fields, cursor, room, top) {
+  return sectionWindow(fields, cursor, room, top, scrollTop);
+}
+
+function keyHint(cols) {
+  if (width(FULL_KEY_HINT) <= cols + RULE_INDENT) return FULL_KEY_HINT;
+  return SHORT_KEY_HINT;
 }
 
 /* ---------------------------------------------------------------- editor */
@@ -383,15 +415,44 @@ class Editor {
     this.text = readConfig();
     this.saved = currentValues(this.text);
     this.values = new Map(this.saved);
-    this.cursor = 0;
-    this.top = 0;
+    this.section = 0;
+    this.cursors = new Map(SETTINGS_SECTIONS.map((section) => [section.name, 0]));
+    this.tops = new Map(SETTINGS_SECTIONS.map((section) => [section.name, 0]));
     this.editing = null; // { buffer } while typing a text value
     this.status = '';
     this.quitArmed = false;
   }
 
   get field() {
-    return FIELDS[this.cursor];
+    return this.fields[this.cursor];
+  }
+
+  get activeSection() {
+    return SETTINGS_SECTIONS[this.section];
+  }
+
+  get fields() {
+    return this.activeSection.fields;
+  }
+
+  get cursor() {
+    return this.cursors.get(this.activeSection.name);
+  }
+
+  set cursor(value) {
+    this.cursors.set(this.activeSection.name, value);
+  }
+
+  get top() {
+    return this.tops.get(this.activeSection.name);
+  }
+
+  set top(value) {
+    this.tops.set(this.activeSection.name, value);
+  }
+
+  switchSection(direction) {
+    this.section = nextSection(this.section, direction, SETTINGS_SECTIONS.length);
   }
 
   effective(field) {
@@ -502,7 +563,7 @@ class Editor {
   render() {
     const cols = Math.max(60, (process.stdout.columns || 84) - 2);
     const keyW = nameColumnWidth();
-    const visible = listWindow(this.cursor, listRoom(this.status), this.top);
+    const visible = listWindow(this.fields, this.cursor, listRoom(this.status), this.top);
     this.top = visible.top;
     const out = [''];
     // Title left, plugin id right, the gap between them measured — not
@@ -510,6 +571,12 @@ class Editor {
     const title = `${identity.NAME} settings`;
     const id = pluginId();
     out.push(` ${BOLD}${title}${R}${DIM}${' '.repeat(Math.max(1, cols - 1 - width(title) - width(id)))}${id}${R}`);
+    const tabs = SETTINGS_SECTIONS.map((section, index) => {
+      if (index === this.section) return `${ACCENT}${INV} ${section.name} ${R}`;
+      return `${DIM}${section.name}${R}`;
+    });
+    out.push(` ${tabs.join(TAB_SEPARATOR)}`);
+    out.push(` ${DIM}${'─'.repeat(cols - RULE_INDENT)}${R}`);
     out.push(visible.hiddenAbove ? `   ${DIM}↑ ${visible.hiddenAbove} more${R}` : '');
     visible.fields.forEach((field, offset) => {
       const selected = visible.top + offset === this.cursor;
@@ -526,11 +593,7 @@ class Editor {
     while (help.length < HELP_ROWS) help.push('');
     for (const line of help) out.push(` ${DIM}${line}${R}`);
     out.push('');
-    out.push(
-      this.editing
-        ? ` ${DIM}type a value · ↵ confirm · esc cancel${R}`
-        : ` ${DIM}↑↓ select · ←→ change · ↵ edit · r default · s save & apply · q close${R}`,
-    );
+    out.push(this.editing ? ` ${DIM}type a value · ↵ confirm · esc cancel${R}` : ` ${DIM}${keyHint(cols)}${R}`);
     if (this.status) out.push(` ${this.status}`);
     process.stdout.write('\x1b[2J\x1b[H' + out.join('\n') + '\n');
   }
@@ -554,8 +617,10 @@ class Editor {
       process.exit(0);
     }
     this.quitArmed = false;
-    if (k === '\x1b[A' || k === 'k') this.cursor = (this.cursor + FIELDS.length - 1) % FIELDS.length;
-    else if (k === '\x1b[B' || k === 'j') this.cursor = (this.cursor + 1) % FIELDS.length;
+    if (k === '\x1b[A' || k === 'k') this.cursor = (this.cursor + this.fields.length - 1) % this.fields.length;
+    else if (k === '\x1b[B' || k === 'j') this.cursor = (this.cursor + 1) % this.fields.length;
+    else if (k === '\t') this.switchSection(1);
+    else if (k === '\x1b[Z') this.switchSection(-1);
     else if (k === '\x1b[C' || k === 'l' || k === ' ' || k === '+') this.step(1);
     else if (k === '\x1b[D' || k === 'h' || k === '-') this.step(-1);
     else if (k === '\r') this.field.kind === 'bool' || this.field.kind === 'enum' ? this.step(1) : this.beginEdit();
@@ -634,4 +699,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { width };
+module.exports = { FIELDS, SETTINGS_SECTIONS, keyHint, listWindow, width };
