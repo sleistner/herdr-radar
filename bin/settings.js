@@ -379,7 +379,7 @@ function wrap(text, cols) {
 // jump as the cursor moves between short and long descriptions.
 const HELP_ROWS = 2;
 
-const TITLE_ROWS = 1;
+const TITLE_ROWS = 0;
 const TAB_ROWS = 1;
 const RULE_ROWS = 1;
 const BLANK_BELOW_RULE_ROWS = 1;
@@ -600,7 +600,6 @@ class Editor {
     const visible = listWindow(this.fields, this.cursor, listRoom(this.status), this.top);
     this.top = visible.top;
     const out = [];
-    out.push(' herdr-radar settings');
     const tabs = SETTINGS_SECTIONS.map((section, index) => {
       const name = section.name.toLowerCase();
       if (index === this.section) return `${ACCENT_BG}${DARK_TEXT} ${name} ${R}`;

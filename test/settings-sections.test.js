@@ -37,7 +37,7 @@ test('tab navigation wraps in both directions', () => {
 test('the popup height holds this fork’s largest tab without making a tall popup', () => {
   assert.equal(largestSectionSize(SETTINGS_SECTIONS), 9);
   assert.equal(MAX_SECTION_ROWS, 9);
-  assert.equal(POPUP_CONTENT_ROWS, 20);
+  assert.equal(POPUP_CONTENT_ROWS, 19);
 });
 
 test('Tab, Shift+Tab, arrows, and h/l select adjacent sections', () => {

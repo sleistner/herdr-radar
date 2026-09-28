@@ -113,7 +113,8 @@ placement = "popup"
 command = ["node", "bin/settings.js"]
 width = 84
 # Eleven chrome rows plus the largest (nine-setting) section.
-height = 20
+# Ten chrome rows plus the largest (nine-setting) section.
+height = 19
 
 [[actions]]
 id = "settings"

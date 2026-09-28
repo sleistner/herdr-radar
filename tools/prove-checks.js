@@ -532,6 +532,14 @@ const cases = [
     true,
     'test/settings-sections.test.js',
   ],
+  [
+    'bin/settings.js',
+    'const TITLE_ROWS = 0;',
+    'const TITLE_ROWS = 1;',
+    'settings: duplicate popup title takes a row from the settings list',
+    true,
+    'test/settings-sections.test.js',
+  ],
   // lib/settings-sections.js — Tab, arrows, and h/l all navigate sections.
   [
     'lib/settings-sections.js',
