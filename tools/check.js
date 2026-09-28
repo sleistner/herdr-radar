@@ -396,6 +396,41 @@ for (const variant of ['light', 'dark']) {
   }
 }
 
+// The highest role is a setting, not a magic token: the default gives it a
+// distinct rank and an empty value turns only that rank off. It must also be
+// reachable from the settings popup and described beside leader_role.
+{
+  const os = require('node:os');
+  const { spawnSync } = require('node:child_process');
+  const readRoles = (toml) => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'radar-config-'));
+    fs.writeFileSync(path.join(dir, 'config.toml'), toml);
+    const out = spawnSync(
+      process.execPath,
+      ['-e', "process.stdout.write(JSON.stringify(require('./lib/config').coordinatorRole))"],
+      { cwd: root, env: { ...process.env, HERDR_PLUGIN_CONFIG_DIR: dir }, encoding: 'utf8' },
+    );
+    fs.rmSync(dir, { recursive: true, force: true });
+    return out.stdout;
+  };
+  for (const [toml, expected] of [
+    ['', '"coordinator"'],
+    ['coordinator_role = "director"\n', '"director"'],
+    ['coordinator_role = ""\n', '""'],
+  ]) {
+    const got = readRoles(toml);
+    if (got !== expected)
+      problems.push(`config: ${JSON.stringify(toml)} reads coordinator_role as ${got}, expected ${expected}`);
+  }
+  const settings = fs.readFileSync(path.join(root, 'bin', 'settings.js'), 'utf8');
+  if (!settings.includes("key: 'coordinator_role'"))
+    problems.push('settings: coordinator_role is not editable in the popup');
+  const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
+  if (!readme.includes('| `coordinator_role` | `coordinator` |')) {
+    problems.push('README: coordinator_role is missing beside leader_role');
+  }
+}
+
 // A vendor this plugin can name never goes nameless.
 //
 // The row is `logo · title`. When the title says nothing the vendor's name
@@ -635,9 +670,9 @@ const gapsUnder = (panes) => panes.filter((pane) => herdrWrites.get(pane)?.at(-1
   });
 }
 
-// A pane whose `role` is the configured leader role (`architect` by default)
-// sorts first in its workspace and heads its split, whatever the activity of
-// the panes beside it.
+// Role ranks put a coordinator above a leader, above workers, whatever the
+// panes' activity. Both ranks get the invisible bold-title marker, while only
+// their stripe shapes differ.
 {
   const { Frame } = require('../lib/frame');
   const frame = new Frame('check');
@@ -645,28 +680,46 @@ const gapsUnder = (panes) => panes.filter((pane) => herdrWrites.get(pane)?.at(-1
     ['ws:busy', 60000 * 5],
     ['ws:arch', 60000],
     ['ws:split', 60000 * 2],
+    ['ws:coord', 60000 * 0],
   ]);
   const rows = [
     { workspace: 'ws', tab: 't1', pane: 'ws:busy', role: '' },
     { workspace: 'ws', tab: 't2', pane: 'ws:split', role: '' },
     { workspace: 'ws', tab: 't2', pane: 'ws:arch', role: 'architect' },
+    { workspace: 'ws', tab: 't3', pane: 'ws:coord', role: 'coordinator' },
   ];
   const keys = frame.sortKeys(rows, new Map(), new Map());
   const order = frame.displayOrder(rows, 'grouped', keys).map((row) => row.pane);
-  if (order[0] !== 'ws:arch') {
-    problems.push(`architect role: order is ${order.join(', ')}, expected ws:arch first`);
+  if (order.slice(0, 2).join() !== 'ws:coord,ws:arch') {
+    problems.push(`role ranks: order is ${order.join(', ')}, expected ws:coord, ws:arch first`);
   }
   if (keys.splitChild(rows[2]) || !keys.splitChild(rows[1])) {
     problems.push('architect role: the architect does not head its split');
   }
+  if (!keys.coordinators.has(rows[3].pane) || keys.leaders.has(rows[3].pane)) {
+    problems.push('coordinator role: coordinator rank is not distinct from the leader rank');
+  }
+  const coordinatorBand = state.bandValue(0, '', { coordinator: keys.coordinators.has(rows[3].pane) });
   const leaderBand = state.bandValue(0, '', { leader: keys.leaders.has(rows[2].pane) });
-  const memberBand = state.bandValue(0, '', { leader: keys.leaders.has(rows[0].pane) });
+  const memberBand = state.bandValue(0, '', {});
+  if (!coordinatorBand.startsWith('☰')) {
+    problems.push(`coordinator role: band is ${JSON.stringify(coordinatorBand)}, not a one-column menu`);
+  }
   if (!leaderBand.startsWith('█')) {
     problems.push(`architect role: leader band is ${JSON.stringify(leaderBand)}, not a full block`);
   }
   if (!memberBand.startsWith('▌')) {
     problems.push(`architect role: member band is ${JSON.stringify(memberBand)}, not a half block`);
   }
+  const line = { band: null, mark: '·', split: '', logo: '', titlePrefix: '' };
+  const title = 'Ranked title';
+  const coordinatorTitle = state.stateTokens('idle', line, title, keys.coordinators.has(rows[3].pane)).title_idle;
+  const leaderTitle = state.stateTokens('idle', line, title, keys.leaders.has(rows[2].pane)).title_idle;
+  const workerTitle = state.stateTokens('idle', line, title, keys.leaders.has(rows[0].pane)).title_idle;
+  if (coordinatorTitle !== `${state.LEADER_MARK}${title}` || leaderTitle !== `${state.LEADER_MARK}${title}`) {
+    problems.push('role ranks: coordinator or leader title is missing the bold marker');
+  }
+  if (workerTitle !== title) problems.push('role ranks: worker title unexpectedly carries the bold marker');
 }
 
 // Colour slots: every top-level group gets its own while there are slots

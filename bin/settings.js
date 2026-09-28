@@ -137,6 +137,12 @@ const FIELDS = [
     fallback: 'architect',
     help: 'A pane whose `role` token has this value sorts first in its group. Empty for none.',
   },
+  {
+    key: 'coordinator_role',
+    kind: 'text',
+    fallback: 'coordinator',
+    help: 'A pane whose `role` token has this value ranks above the leader. Empty for none.',
+  },
   { key: 'group_gap', kind: 'bool', fallback: true, help: 'A blank row between workspace groups.' },
   {
     key: 'split_corner',

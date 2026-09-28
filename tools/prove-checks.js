@@ -151,6 +151,39 @@ const cases = [
     '.map((fg, index) => `{ contains = "${palette.band.bar}${\'\\\\u2060\'.repeat(index + 1)}", fg = "${fg}" }`)',
     'leader band: colour rule tied to the half-block character',
   ],
+  // Coordinator is the highest role rank, configured and documented alongside
+  // leader. Its stripe differs, but it reuses the leader's bold title marker.
+  [
+    'lib/config.js',
+    "coordinatorRole: typeof raw.coordinator_role === 'string' ? raw.coordinator_role.trim() : 'coordinator',",
+    "coordinatorRole: typeof raw.coordinator_role === 'string' ? raw.coordinator_role.trim() : '',",
+    'coordinator role: default rank disabled',
+  ],
+  [
+    'bin/settings.js',
+    "key: 'coordinator_role'",
+    "key: 'coordinator_rank'",
+    'coordinator role: setting removed from the popup',
+  ],
+  [
+    'README.md',
+    '| `coordinator_role` | `coordinator` |',
+    '| `coordinator_rank` | `coordinator` |',
+    'coordinator role: setting removed from README',
+  ],
+  [
+    'lib/frame.js',
+    'const coordinators = config.coordinatorRole',
+    'const coordinators = false && config.coordinatorRole',
+    'coordinator role: rank ignored in group order',
+  ],
+  ['lib/palette.js', "coordinatorBar: '☰'", "coordinatorBar: '█'", 'coordinator role: menu stripe guard removed'],
+  [
+    'lib/state.js',
+    'const bar = coordinator ? palette.band.coordinatorBar : leader ? palette.band.leaderBar : palette.band.bar;',
+    'const bar = leader ? palette.band.leaderBar : palette.band.bar;',
+    'coordinator role: stripe rank guard removed',
+  ],
   // Adding rather than removing: a removed token trips the mapping check above
   // before this one, so the only way to reach it is a token nothing draws.
   [

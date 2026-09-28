@@ -234,14 +234,18 @@ herdr workspace report-metadata <helper-workspace-id> --source my-tool --token o
 
 # Put a pane first in its group, ahead of busier panes.
 herdr pane report-metadata <lead-pane-id> --source my-tool --token role=architect
+
+# Put a pane above the leader (and every worker) in its group.
+herdr pane report-metadata <coordinator-pane-id> --source my-tool --token role=coordinator
 ```
 
 - `owner` names an open workspace id. A closed or unknown id is ignored and the
   workspace falls back to git. The tree stays one level deep: a helper of a
   helper hangs under the top of the chain, and a loop of owners is broken.
-- `role` is matched against the `leader_role` setting (`architect` unless you
-  change it). The leader's tab ranks first in its workspace and the leader
-  heads its split, so the lead session sits at the top of its group while its
+- `role` is matched first against `coordinator_role` (`coordinator` unless you
+  change it), then `leader_role` (`architect` unless you change it). The
+  coordinator or leader's tab ranks first in its workspace and heads its
+  split, so the highest-ranked session sits at the top of its group while its
   helpers work.
 
 With `group_colors` on, each group takes one of twelve colours and keeps it
@@ -282,6 +286,7 @@ the config file and restarts the daemon.
 | `group_headers` | `true` | a header row naming each workspace |
 | `group_colors` | `true` | a colour and a left stripe per group; an `owner` workspace token picks the group |
 | `leader_role` | `architect` | a pane whose `role` token has this value sorts first in its group; empty for none |
+| `coordinator_role` | `coordinator` | a pane whose `role` token has this value ranks above the leader; empty for none |
 | `group_gap` | `true` | a blank row between groups |
 | `split_corner` | `false` | hang the other panes of a split screen off the first with a `├─` corner |
 | `reorder_workspaces` | `false` | make Herdr's workspace indices follow Radar's activity order |
