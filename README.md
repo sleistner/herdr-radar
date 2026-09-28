@@ -299,6 +299,13 @@ the config file and restarts the daemon.
 | `colors.active_row_bg_light` | `#b9cdf2` | selected-row fill for a light theme; empty keeps the theme's own |
 | `colors.active_row_bg_dark` | `#414868` | selected-row fill for a dark theme |
 
+`row_label` picks what names an agent row. `title` is the session's own title,
+`tab` is the name of the tab it runs in, and `both` puts the tab name in front of
+the title — what `show_tab = true` did, which still reads as `both`. Pick `tab`
+when you name tabs after their sessions, so the name is not written twice. A
+tab-only row keeps its title when the tab was never named (Herdr labels such a
+tab with its number).
+
 Set `reorder_workspaces = true` to make Herdr's actual workspace order follow Radar's
 most-active-first order, so the Spaces list reads in the same order as the Agents panel and
 the indexed jump lands on the row you are looking at. Worktree families stay together;
@@ -319,6 +326,10 @@ The first two are live state; the rest live in
 `$(herdr plugin config-dir hhdebb.herdr-radar)/config.toml` and can be edited by hand —
 then `state-stop` and `state-start`. The file appears the first time the popup saves; before
 that, create it with the keys above (booleans unquoted: `group_gap = false`).
+
+Both this file and Herdr's `config.toml` can be symlinks into a dotfiles repository: the
+popup and `configure` write through the link to its target, so the link stays in place. (A
+link whose target is missing is written over, as a plain file.)
 
 ## Troubleshooting
 

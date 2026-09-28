@@ -1,5 +1,40 @@
 # Changelog
 
+## 1.3.20 — 2026-09-28
+
+- **`row_label` says what names a row.** `show_tab = true` put the tab's
+  name in front of the session title, and a tab named after the session it
+  runs — a common habit past a few tabs — read the same thing twice, the
+  second copy off the edge. `row_label` replaces it: `title` (the default)
+  is the session's own title, `tab` is the tab's name instead, `both` is
+  what `show_tab = true` did — and still reads as, without `row_label`. A
+  tab that was never named carries Herdr's number, so in `tab` mode it keeps
+  the title rather than reading as `1`.
+  [#26](https://github.com/hhdebb/herdr-radar/pull/26) by @sleistner.
+
+## 1.3.19 — 2026-09-28
+
+- **A group's spacer no longer lands mid-group.** A pane's sort keys were
+  rewritten only when its own two keys changed, but `tab_key` follows the
+  busiest pane of the tab and can move on its own — Herdr then sorted by
+  the stale one while the spacer was placed from the fresh one, and in a
+  workspace with two tabs the blank row could open between them. All three
+  keys are part of the rewrite check now.
+  [#27](https://github.com/hhdebb/herdr-radar/pull/27) by @sleistner.
+
+- **A symlinked config keeps its link.** A `config.toml` linked in from a
+  dotfiles repository was replaced by a plain file the first time the
+  settings popup saved or `configure` rewrote the managed blocks, and every
+  change after that stayed on the machine. Writes go through the link to
+  its target now. [#28](https://github.com/hhdebb/herdr-radar/pull/28) by
+  @sleistner.
+
+- **The settings popup fits the terminal.** It takes 90% of the terminal's
+  height instead of a fixed 26 rows, the list scrolls with the cursor when
+  it is taller than the room, and the name column fits the longest name so
+  every value starts in one column.
+  [#29](https://github.com/hhdebb/herdr-radar/pull/29) by @sleistner.
+
 ## 1.3.18 — 2026-09-27
 
 - **A split pane draws as a plain row; the corner is a setting.** The other

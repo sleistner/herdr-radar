@@ -155,6 +155,10 @@ const FIELDS = [
     kind: 'enum',
     options: ['title', 'tab', 'both'],
     fallback: 'title',
+    // A file from before this setting says `show_tab = true`, which renders
+    // as `both` (lib/config.js); the popup shows what renders, not the
+    // fallback.
+    legacy: (raw) => (raw.show_tab === true ? 'both' : undefined),
     help: "What names an agent row: the session's title, its tab's name, or both.",
   },
   {
@@ -215,7 +219,7 @@ function currentValues(text) {
       continue;
     }
     const holder = field.table ? (raw[field.table] ?? {}) : raw;
-    values.set(field, holder[field.key]);
+    values.set(field, holder[field.key] ?? field.legacy?.(raw));
   }
   return values;
 }
@@ -325,10 +329,52 @@ function wrap(text, cols) {
 // jump as the cursor moves between short and long descriptions.
 const HELP_ROWS = 2;
 
-// Every row of the popup that is not a setting: the blank above the title, the
-// title, the two rows around the list, the help, the blank under it, the key
-// hint, and the line the trailing newline leaves.
-const FIXED_ROWS = 1 + 1 + 2 + HELP_ROWS + 1 + 1 + 1;
+const BLANK_ABOVE_TITLE_ROWS = 1;
+const TITLE_ROWS = 1;
+const LIST_BOUNDARY_ROWS = 2;
+const GAP_BELOW_HELP_ROWS = 1;
+const KEY_HINT_ROWS = 1;
+const TRAILING_NEWLINE_ROWS = 1;
+
+// Every row of the popup that is not a setting.
+const FIXED_ROWS =
+  BLANK_ABOVE_TITLE_ROWS +
+  TITLE_ROWS +
+  LIST_BOUNDARY_ROWS +
+  HELP_ROWS +
+  GAP_BELOW_HELP_ROWS +
+  KEY_HINT_ROWS +
+  TRAILING_NEWLINE_ROWS;
+
+const NAME_VALUE_GAP = 2;
+const DEFAULT_POPUP_ROWS = 26;
+const MINIMUM_LIST_ROWS = 3;
+const STATUS_ROWS = 1;
+
+// The name column fits the longest name, so every value starts in one column.
+function nameColumnWidth() {
+  return Math.max(...FIELDS.map((field) => width(fieldName(field)))) + NAME_VALUE_GAP;
+}
+
+// The list gets whatever the popup's height leaves over.
+function listRoom(hasStatus) {
+  let rows = (process.stdout.rows || DEFAULT_POPUP_ROWS) - FIXED_ROWS;
+  if (hasStatus) rows -= STATUS_ROWS;
+  return Math.max(MINIMUM_LIST_ROWS, rows);
+}
+
+// The visible rows scroll with the cursor; the hidden counts mark the rest.
+function listWindow(cursor, room, top) {
+  const nextTop = scrollTop(FIELDS.length, cursor, room, top);
+  const hiddenAbove = nextTop;
+  const hiddenBelow = Math.max(0, FIELDS.length - nextTop - room);
+  return {
+    top: nextTop,
+    fields: FIELDS.slice(nextTop, nextTop + room),
+    hiddenAbove,
+    hiddenBelow,
+  };
+}
 
 /* ---------------------------------------------------------------- editor */
 
@@ -338,6 +384,7 @@ class Editor {
     this.saved = currentValues(this.text);
     this.values = new Map(this.saved);
     this.cursor = 0;
+    this.top = 0;
     this.editing = null; // { buffer } while typing a text value
     this.status = '';
     this.quitArmed = false;
@@ -454,24 +501,18 @@ class Editor {
 
   render() {
     const cols = Math.max(60, (process.stdout.columns || 84) - 2);
-    // The name column fits the longest name, so every value starts in one column.
-    const keyW = Math.max(...FIELDS.map((field) => width(fieldName(field)))) + 2;
-    // The list gets whatever the popup's height leaves over; a list taller
-    // than that scrolls with the cursor, and the blank rows around it say how
-    // much is out of view.
-    const room = Math.max(3, (process.stdout.rows || 26) - FIXED_ROWS - (this.status ? 1 : 0));
-    this.top = scrollTop(FIELDS.length, this.cursor, room, this.top ?? 0);
-    const hiddenAbove = this.top;
-    const hiddenBelow = Math.max(0, FIELDS.length - this.top - room);
+    const keyW = nameColumnWidth();
+    const visible = listWindow(this.cursor, listRoom(this.status), this.top);
+    this.top = visible.top;
     const out = [''];
     // Title left, plugin id right, the gap between them measured — not
     // guessed — so the pair fits the popup's width exactly and never wraps.
     const title = `${identity.NAME} settings`;
     const id = pluginId();
     out.push(` ${BOLD}${title}${R}${DIM}${' '.repeat(Math.max(1, cols - 1 - width(title) - width(id)))}${id}${R}`);
-    out.push(hiddenAbove ? `   ${DIM}↑ ${hiddenAbove} more${R}` : '');
-    FIELDS.slice(this.top, this.top + room).forEach((field, offset) => {
-      const selected = this.top + offset === this.cursor;
+    out.push(visible.hiddenAbove ? `   ${DIM}↑ ${visible.hiddenAbove} more${R}` : '');
+    visible.fields.forEach((field, offset) => {
+      const selected = visible.top + offset === this.cursor;
       const changed = this.values.get(field) !== this.saved.get(field);
       const name = fieldName(field);
       const value =
@@ -480,7 +521,7 @@ class Editor {
       const row = `${marker} ${pad(name, keyW)} ${value}`;
       out.push(selected ? ` ${ACCENT}▸${R} ${BOLD}${row}${R}` : `   ${row}`);
     });
-    out.push(hiddenBelow ? `   ${DIM}↓ ${hiddenBelow} more${R}` : '');
+    out.push(visible.hiddenBelow ? `   ${DIM}↓ ${visible.hiddenBelow} more${R}` : '');
     const help = wrap(this.field.help, cols - 1).slice(0, HELP_ROWS);
     while (help.length < HELP_ROWS) help.push('');
     for (const line of help) out.push(` ${DIM}${line}${R}`);
