@@ -4,8 +4,21 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const { scrollTop } = require('../lib/scroll-window');
-const { settingsSections, nextSection, sectionDirection, sectionWindow } = require('../lib/settings-sections');
-const { FIELDS, SETTINGS_SECTIONS, keyHint, listWindow } = require('../bin/settings');
+const {
+  settingsSections,
+  largestSectionSize,
+  nextSection,
+  sectionDirection,
+  sectionWindow,
+} = require('../lib/settings-sections');
+const {
+  FIELDS,
+  SETTINGS_SECTIONS,
+  MAX_SECTION_ROWS,
+  POPUP_CONTENT_ROWS,
+  keyHint,
+  listWindow,
+} = require('../bin/settings');
 
 test('settings sections preserve the requested tab order and every field', () => {
   assert.deepEqual(
@@ -21,14 +34,19 @@ test('tab navigation wraps in both directions', () => {
   assert.equal(nextSection(0, -1, sectionCount), sectionCount - 1);
 });
 
-test('left/right and h/l navigate tabs instead of changing values', () => {
+test('the popup height holds this fork’s largest tab without making a tall popup', () => {
+  assert.equal(largestSectionSize(SETTINGS_SECTIONS), 9);
+  assert.equal(MAX_SECTION_ROWS, 9);
+  assert.equal(POPUP_CONTENT_ROWS, 20);
+});
+
+test('Tab, Shift+Tab, arrows, and h/l select adjacent sections', () => {
+  assert.equal(sectionDirection('\t'), 1);
   assert.equal(sectionDirection('\x1b[C'), 1);
   assert.equal(sectionDirection('l'), 1);
+  assert.equal(sectionDirection('\x1b[Z'), -1);
   assert.equal(sectionDirection('\x1b[D'), -1);
   assert.equal(sectionDirection('h'), -1);
-  assert.equal(sectionDirection(' '), 0);
-  assert.equal(sectionDirection('+'), 0);
-  assert.equal(sectionDirection('-'), 0);
 });
 
 test('a tab list scrolls only within its active section', () => {
@@ -51,5 +69,5 @@ test('the popup list receives only the selected tab fields', () => {
 });
 
 test('the full section key hint fits an 84-column popup', () => {
-  assert.equal(keyHint(82), '↑↓ select · ←→ tab · ↵ change · +/- step · r default · s save · q close');
+  assert.equal(keyHint(82), '↑↓ select   ←→ section   + / - step');
 });

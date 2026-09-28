@@ -532,13 +532,20 @@ const cases = [
     true,
     'test/settings-sections.test.js',
   ],
-  // lib/settings-sections.js — left/right (and h/l) navigate tabs; they do
-  // not change the selected setting's value.
+  // lib/settings-sections.js — Tab, arrows, and h/l all navigate sections.
   [
     'lib/settings-sections.js',
-    "if (key === '\\\\x1b[C' || key === 'l') return 1;",
-    'return 0;',
+    'if (FORWARD_SECTION_KEYS.has(key)) return 1;',
+    'if (FORWARD_SECTION_KEYS.has(key)) return 0;',
     'settings: right arrow no longer advances to the next section',
+    true,
+    'test/settings-sections.test.js',
+  ],
+  [
+    'lib/settings-sections.js',
+    'return Math.max(...sections.map((section) => section.fields.length));',
+    'return Math.min(...sections.map((section) => section.fields.length));',
+    'settings: popup height follows the shortest tab instead of the largest',
     true,
     'test/settings-sections.test.js',
   ],

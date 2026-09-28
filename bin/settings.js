@@ -26,7 +26,13 @@ const view = require('../lib/view');
 const managed = require('../lib/managed-config');
 const { detachedNode } = require('../lib/spawn');
 const { scrollTop } = require('../lib/scroll-window');
-const { settingsSections, nextSection, sectionDirection, sectionWindow } = require('../lib/settings-sections');
+const {
+  settingsSections,
+  largestSectionSize,
+  nextSection,
+  sectionDirection,
+  sectionWindow,
+} = require('../lib/settings-sections');
 const { pluginId, pluginConfigDir, ensureDir, stateRoot } = require('../lib/paths');
 const { editTopLevel, editTable, writeAtomic } = require('../lib/toml-blocks');
 const identity = require('../lib/identity');
@@ -307,11 +313,12 @@ function saveValues(text, values) {
 /* ------------------------------------------------------------- display */
 
 const R = '\x1b[0m';
-const BOLD = '\x1b[1m';
 const DIM = '\x1b[2m';
-const INV = '\x1b[7m';
-const ACCENT = '\x1b[38;5;110m';
 const WARN = '\x1b[38;5;179m';
+const ACCENT_BG = '\x1b[48;5;110m';
+const DARK_TEXT = '\x1b[38;5;235m';
+const DARK_BUTTON_BG = '\x1b[48;5;240m';
+const LIGHT_TEXT = '\x1b[38;5;255m';
 
 // A setting's name as the file spells it: `colors.active_row_bg_light` for a
 // key inside a table.
@@ -344,6 +351,10 @@ function width(s) {
   return w;
 }
 
+function plain(s) {
+  return s.replace(/\x1b\[[0-9;]*m/g, '');
+}
+
 const pad = (s, n) => s + ' '.repeat(Math.max(0, n - width(s)));
 
 // Break a sentence at spaces so no line exceeds `cols`. The terminal would
@@ -368,35 +379,40 @@ function wrap(text, cols) {
 // jump as the cursor moves between short and long descriptions.
 const HELP_ROWS = 2;
 
-const BLANK_ABOVE_TITLE_ROWS = 1;
 const TITLE_ROWS = 1;
 const TAB_ROWS = 1;
 const RULE_ROWS = 1;
+const BLANK_BELOW_RULE_ROWS = 1;
 const LIST_BOUNDARY_ROWS = 2;
 const GAP_BELOW_HELP_ROWS = 1;
 const KEY_HINT_ROWS = 1;
-const TRAILING_NEWLINE_ROWS = 1;
+const BUTTON_ROWS = 1;
 
 // Every row of the popup that is not a setting.
 const FIXED_ROWS =
-  BLANK_ABOVE_TITLE_ROWS +
   TITLE_ROWS +
   TAB_ROWS +
   RULE_ROWS +
+  BLANK_BELOW_RULE_ROWS +
   LIST_BOUNDARY_ROWS +
   HELP_ROWS +
   GAP_BELOW_HELP_ROWS +
   KEY_HINT_ROWS +
-  TRAILING_NEWLINE_ROWS;
+  BUTTON_ROWS;
 
 const NAME_VALUE_GAP = 2;
 const DEFAULT_POPUP_ROWS = 26;
 const MINIMUM_LIST_ROWS = 3;
 const STATUS_ROWS = 1;
 const RULE_INDENT = 1;
-const TAB_SEPARATOR = ' · ';
-const FULL_KEY_HINT = '↑↓ select · ←→ tab · ↵ change · +/- step · r default · s save · q close';
-const SHORT_KEY_HINT = '↑↓ select · ←→ tab · ↵ change · +/- · r · s · q';
+const TAB_SEPARATOR = '  ';
+const FULL_KEY_HINT = '↑↓ select   ←→ section   + / - step';
+const SHORT_KEY_HINT = '↑↓ select  ←→ section  +/- step';
+const APPLY_LABEL = '↵ apply';
+const CLOSE_LABEL = 'esc close';
+const BUTTON_GAP = '   ';
+const MAX_SECTION_ROWS = largestSectionSize(SETTINGS_SECTIONS);
+const POPUP_CONTENT_ROWS = FIXED_ROWS + MAX_SECTION_ROWS;
 
 // The name column fits the longest name, so every value starts in one column.
 function nameColumnWidth() {
@@ -418,6 +434,12 @@ function listWindow(fields, cursor, room, top) {
 function keyHint(cols) {
   if (width(FULL_KEY_HINT) <= cols + RULE_INDENT) return FULL_KEY_HINT;
   return SHORT_KEY_HINT;
+}
+
+function buttons(cols) {
+  const labels = ` ${APPLY_LABEL} ${BUTTON_GAP} ${CLOSE_LABEL} `;
+  const left = ' '.repeat(Math.max(0, Math.floor((cols - width(labels)) / 2)));
+  return `${left}${ACCENT_BG}${DARK_TEXT} ${APPLY_LABEL} ${R}${BUTTON_GAP}${DARK_BUTTON_BG}${LIGHT_TEXT} ${CLOSE_LABEL} ${R}`;
 }
 
 /* ---------------------------------------------------------------- editor */
@@ -577,35 +599,35 @@ class Editor {
     const keyW = nameColumnWidth();
     const visible = listWindow(this.fields, this.cursor, listRoom(this.status), this.top);
     this.top = visible.top;
-    const out = [''];
-    // Title left, plugin id right, the gap between them measured — not
-    // guessed — so the pair fits the popup's width exactly and never wraps.
-    const title = `${identity.NAME} settings`;
-    const id = pluginId();
-    out.push(` ${BOLD}${title}${R}${DIM}${' '.repeat(Math.max(1, cols - 1 - width(title) - width(id)))}${id}${R}`);
+    const out = [];
+    out.push(' herdr-radar settings');
     const tabs = SETTINGS_SECTIONS.map((section, index) => {
-      if (index === this.section) return `${ACCENT}${INV} ${section.name} ${R}`;
-      return `${DIM}${section.name}${R}`;
+      const name = section.name.toLowerCase();
+      if (index === this.section) return `${ACCENT_BG}${DARK_TEXT} ${name} ${R}`;
+      return name;
     });
     out.push(` ${tabs.join(TAB_SEPARATOR)}`);
     out.push(` ${DIM}${'─'.repeat(cols - RULE_INDENT)}${R}`);
-    out.push(visible.hiddenAbove ? `   ${DIM}↑ ${visible.hiddenAbove} more${R}` : '');
+    out.push('');
+    if (visible.hiddenAbove) out.push(`   ${DIM}↑ ${visible.hiddenAbove} more${R}`);
     visible.fields.forEach((field, offset) => {
       const selected = visible.top + offset === this.cursor;
       const changed = this.values.get(field) !== this.saved.get(field);
       const name = fieldName(field);
-      const value =
-        selected && this.editing ? `${INV}${this.editing.buffer}${R}${DIM}▏${R}` : show(field, this.values.get(field));
-      const marker = changed ? `${WARN}*${R}` : ' ';
+      const shown = show(field, this.values.get(field));
+      const value = selected && this.editing ? this.editing.buffer : selected ? plain(shown) : shown;
+      const marker = changed ? '*' : ' ';
       const row = `${marker} ${pad(name, keyW)} ${value}`;
-      out.push(selected ? ` ${ACCENT}▸${R} ${BOLD}${row}${R}` : `   ${row}`);
+      if (selected) out.push(` ${ACCENT_BG}${DARK_TEXT}${pad(`▸ ${row}`, cols - RULE_INDENT)}${R}`);
+      else out.push(`   ${row}`);
     });
-    out.push(visible.hiddenBelow ? `   ${DIM}↓ ${visible.hiddenBelow} more${R}` : '');
+    if (visible.hiddenBelow) out.push(`   ${DIM}↓ ${visible.hiddenBelow} more${R}`);
     const help = wrap(this.field.help, cols - 1).slice(0, HELP_ROWS);
     while (help.length < HELP_ROWS) help.push('');
     for (const line of help) out.push(` ${DIM}${line}${R}`);
     out.push('');
     out.push(this.editing ? ` ${DIM}type a value · ↵ confirm · esc cancel${R}` : ` ${DIM}${keyHint(cols)}${R}`);
+    out.push(buttons(cols));
     if (this.status) out.push(` ${this.status}`);
     process.stdout.write('\x1b[2J\x1b[H' + out.join('\n') + '\n');
   }
@@ -629,11 +651,10 @@ class Editor {
       process.exit(0);
     }
     this.quitArmed = false;
+    const direction = sectionDirection(k);
     if (k === '\x1b[A' || k === 'k') this.cursor = (this.cursor + this.fields.length - 1) % this.fields.length;
     else if (k === '\x1b[B' || k === 'j') this.cursor = (this.cursor + 1) % this.fields.length;
-    else if (k === '\t') this.switchSection(1);
-    else if (k === '\x1b[Z') this.switchSection(-1);
-    else if (sectionDirection(k)) this.switchSection(sectionDirection(k));
+    else if (direction) this.switchSection(direction);
     else if (k === ' ' || k === '+') this.step(1);
     else if (k === '-') this.step(-1);
     else if (k === '\r') this.field.kind === 'bool' || this.field.kind === 'enum' ? this.step(1) : this.beginEdit();
@@ -712,4 +733,13 @@ if (require.main === module) {
   }
 }
 
-module.exports = { FIELDS, SETTINGS_SECTIONS, keyHint, listWindow, width };
+module.exports = {
+  FIELDS,
+  SETTINGS_SECTIONS,
+  MAX_SECTION_ROWS,
+  POPUP_CONTENT_ROWS,
+  listWindow,
+  keyHint,
+  buttons,
+  width,
+};
